@@ -363,7 +363,8 @@ function populateEquipSelect() {
   while (sel.options.length > 1) sel.remove(1);
   allEquipamentos.forEach(e => {
     const o = document.createElement('option');
-    o.value = e.nome; o.textContent = `${e.nome} (${e.tipo} – ${e.loja})`;
+    const nome = e.nome || e.serie || e.tipo;
+    o.value = nome; o.textContent = `${nome} (${e.tipo} – ${e.loja})`;
     sel.appendChild(o);
   });
   sel.value = val;

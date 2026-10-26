@@ -372,7 +372,7 @@
       </div>
 
       <div class="filters-bar">
-        <input class="filter-input" type="search" id="ef-busca" placeholder="Buscar por nome, série, marca…" oninput="renderEquipamentos()">
+        <input class="filter-input" type="search" id="ef-busca" placeholder="Buscar por série, marca…" oninput="renderEquipamentos()">
         <select class="filter-select" id="ef-loja" onchange="renderEquipamentos()">
           <option value="">Toda loja</option>
         </select>
@@ -392,6 +392,7 @@
             <tr>
               <th>Série / Patrimônio</th>
               <th>Marca / Modelo</th>
+              <th>Data de aquisição</th>
               <th>Loja</th>
               <th>Responsável</th>
               <th>Status</th>
@@ -539,17 +540,11 @@
             </select>
           </div>
         </div>
-        <div class="field-row">
-          <div class="field">
-            <label for="e-nome">Nome / Descrição *</label>
-            <input id="e-nome" type="text" placeholder="Ex: Computador Caixa 2" required>
-          </div>
-          <div class="field">
-            <label for="e-loja">Loja *</label>
-            <select id="e-loja" required>
-              <option value="">Selecione…</option>
-            </select>
-          </div>
+        <div class="field">
+          <label for="e-loja">Loja *</label>
+          <select id="e-loja" required>
+            <option value="">Selecione…</option>
+          </select>
         </div>
         <div class="field-row">
           <div class="field">
@@ -560,6 +555,10 @@
             <label for="e-modelo">Modelo</label>
             <input id="e-modelo" type="text" placeholder="OptiPlex 3080…">
           </div>
+        </div>
+        <div class="field">
+          <label for="e-data-aquisicao">Data de aquisição *</label>
+          <input id="e-data-aquisicao" type="date" required>
         </div>
         <div class="field-row">
           <div class="field">

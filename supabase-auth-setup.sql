@@ -55,11 +55,12 @@ create index if not exists idx_chamados_user_id on public.chamados (user_id);
 
 -- ──────────────────────────────────────────
 -- 4. TABELA: equipamentos
---    Adiciona responsavel e responsavel_email
+--    Adiciona dados de responsável e aquisição
 -- ──────────────────────────────────────────
 alter table public.equipamentos
   add column if not exists responsavel        text,
-  add column if not exists responsavel_email  text;
+  add column if not exists responsavel_email  text,
+  add column if not exists data_aquisicao     date;
 
 -- ──────────────────────────────────────────
 -- 5. RLS — Habilitar nas 3 tabelas
