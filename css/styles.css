@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════
-   SUPORTE MEGA – Stylesheet
+   SUPORTE MEGA – Folha de estilos
    ═══════════════════════════════════════════ */
 
-/* ── Tokens ── */
+/* ── Variáveis de design ── */
 :root {
   --bg:        #0f1117;
   --bg2:       #181c27;
@@ -78,10 +78,10 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ── App shell ── */
+/* ── Estrutura do aplicativo ── */
 .app { display: flex; min-height: 100vh; }
 
-/* ── Sidebar ── */
+/* ── Barra lateral ── */
 .sidebar {
   width: var(--sidebar-w);
   background: var(--bg2);
@@ -131,7 +131,7 @@ body {
   background: none; border: none; width: 100%; padding: 6px 4px;
 }
 
-/* ── Main content ── */
+/* ── Conteúdo principal ── */
 .main {
   margin-left: var(--sidebar-w);
   flex: 1;
@@ -159,7 +159,7 @@ body {
 .page { display: none; flex-direction: column; gap: 24px; padding: 24px; flex: 1; }
 .page.active { display: flex; }
 
-/* ── Stats row ── */
+/* ── Linha de indicadores ── */
 .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .stat-card {
   background: var(--bg2); border: 1px solid var(--border);
@@ -173,11 +173,11 @@ body {
 .stat-card.danger  .stat-value { color: var(--danger); }
 .stat-card.success .stat-value { color: var(--success); }
 
-/* ── Section header ── */
+/* ── Cabeçalho da seção ── */
 .section-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .section-title  { font-size: 15px; font-weight: 600; flex: 1; }
 
-/* ── Buttons ── */
+/* ── Botões ── */
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 7px 14px; border-radius: var(--radius-sm);
@@ -193,7 +193,7 @@ body {
 .btn-sm      { padding: 5px 10px; font-size: 12px; }
 .btn svg     { width: 14px; height: 14px; }
 
-/* ── Filters bar ── */
+/* ── Barra de filtros ── */
 .filters-bar {
   display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
   background: var(--bg2); border: 1px solid var(--border);
@@ -211,7 +211,7 @@ body {
 .filter-input:focus, .filter-select:focus  { border-color: var(--accent); }
 .filter-input::placeholder { color: var(--fg3); }
 
-/* ── Table ── */
+/* ── Tabela ── */
 .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 thead th {
@@ -231,7 +231,7 @@ tbody tr:hover { background: var(--bg3); }
 tbody td { padding: 10px 14px; vertical-align: middle; max-width: 260px; }
 tbody td.wrap { white-space: normal; word-break: break-word; }
 
-/* ── Badges / chips ── */
+/* ── Selos / etiquetas ── */
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 99px;
@@ -245,7 +245,7 @@ tbody td.wrap { white-space: normal; word-break: break-word; }
 .badge-media     { background: color-mix(in srgb, var(--info)    18%, transparent); color: var(--info); }
 .badge-baixa     { background: color-mix(in srgb, var(--fg3)     18%, transparent); color: var(--fg3); }
 
-/* ── Modal ── */
+/* ── Janela modal ── */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,.65);
   display: flex; align-items: center; justify-content: center;
@@ -272,7 +272,7 @@ tbody td.wrap { white-space: normal; word-break: break-word; }
 }
 .modal-body { padding: 16px 24px 24px; display: flex; flex-direction: column; gap: 14px; }
 
-/* ── Form elements ── */
+/* ── Elementos do formulário ── */
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-label { font-size: 12px; font-weight: 600; color: var(--fg2); letter-spacing: .02em; }
 .form-control {
@@ -298,7 +298,7 @@ tbody td.wrap { white-space: normal; word-break: break-word; }
 .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 select { cursor: pointer; }
 
-/* ── Detail panel ── */
+/* ── Painel de detalhes ── */
 .detail-header { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
 .detail-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .detail-body {
@@ -311,7 +311,7 @@ select { cursor: pointer; }
 .detail-field-label { font-size: 10px; font-weight: 600; color: var(--fg3); letter-spacing: .06em; text-transform: uppercase; }
 .detail-field-val { font-size: 13px; margin-top: 2px; }
 
-/* ── Empty state ── */
+/* ── Estado vazio ── */
 .empty-state {
   text-align: center; padding: 48px 24px; color: var(--fg3);
   display: flex; flex-direction: column; align-items: center; gap: 12px;
@@ -319,7 +319,7 @@ select { cursor: pointer; }
 .empty-state svg { opacity: .3; }
 .empty-state p { font-size: 14px; }
 
-/* ── Toast ── */
+/* ── Notificações ── */
 .toast-container {
   position: fixed; bottom: 24px; right: 24px; z-index: 400;
   display: flex; flex-direction: column; gap: 8px;
@@ -336,7 +336,7 @@ select { cursor: pointer; }
 .toast.info { border-left: 3px solid var(--accent); }
 @keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-/* ── Loading / spinner ── */
+/* ── Carregamento / indicador ── */
 .spinner {
   width: 18px; height: 18px; border: 2px solid var(--border);
   border-top-color: var(--accent); border-radius: 50%;
@@ -350,7 +350,7 @@ select { cursor: pointer; }
 }
 .loading-indicator { display: flex; align-items: center; gap: 8px; }
 
-/* ── Login screen ── */
+/* ── Tela de acesso ── */
 .login-screen {
   position: fixed; inset: 0; z-index: 999;
   background: var(--bg);
@@ -387,7 +387,7 @@ select { cursor: pointer; }
 }
 .login-err.show { display: block; }
 
-/* ── User menu na topbar ── */
+/* ── Menu do usuário na barra superior ── */
 .user-menu-wrap { position: relative; }
 .user-menu-btn {
   display: flex; align-items: center; gap: 8px;
@@ -427,7 +427,7 @@ select { cursor: pointer; }
 .user-dropdown-item:hover { background: var(--bg3); color: var(--fg); }
 .user-dropdown-sep { height: 1px; background: var(--border); margin: 4px 0; }
 
-/* ── Role badges ── */
+/* ── Selos de perfil ── */
 .role-badge {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600;
@@ -435,7 +435,7 @@ select { cursor: pointer; }
 .role-admin { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
 .role-user  { background: color-mix(in srgb, var(--fg3)   18%, transparent); color: var(--fg3); }
 
-/* ── Info banner ── */
+/* ── Faixa informativa ── */
 .info-banner {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
@@ -449,7 +449,7 @@ select { cursor: pointer; }
   font-size: 12.5px; color: var(--fg2); display: flex; gap: 8px; align-items: flex-start;
 }
 
-/* ── Timeline de atividade no chamado ── */
+/* ── Linha do tempo de atividades do chamado ── */
 .timeline { display: flex; flex-direction: column; gap: 0; }
 .timeline-item {
   display: flex; gap: 12px; padding: 8px 0;
@@ -465,7 +465,7 @@ select { cursor: pointer; }
 .timeline-time { font-size: 11px; color: var(--fg3); white-space: nowrap; margin-top: 2px; }
 .timeline-text { font-size: 13px; color: var(--fg2); line-height: 1.5; }
 
-/* ── Responsive ── */
+/* ── Responsividade ── */
 @media (max-width: 960px) {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
 }

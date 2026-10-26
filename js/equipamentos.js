@@ -23,7 +23,7 @@ async function loadEquipamentos() {
     atualizadoEm: r.atualizado_em ? new Date(r.atualizado_em).getTime() : null,
   }));
   renderEquipamentos();
-  populateEquipSelect?.(); // atualiza select no form de chamado se existir
+  populateEquipSelect?.(); // Atualiza a lista de equipamentos no formulário de chamados, se existir.
 }
 
 function subscribeEquipamentos() {
@@ -35,7 +35,7 @@ function subscribeEquipamentos() {
 }
 
 // ─────────────────────────────────────────
-// Render tabela
+// Renderização da tabela
 // ─────────────────────────────────────────
 function renderEquipamentos() {
   const el = document.getElementById('equip-table-body');
@@ -117,7 +117,7 @@ function populateLojaFilterEquip() {
 }
 
 // ─────────────────────────────────────────
-// Modal: Novo / Editar Equipamento
+// Janela modal: novo / editar equipamento
 // ─────────────────────────────────────────
 function openNovoEquip() {
   document.getElementById('me-titulo').textContent = 'Novo Equipamento';
@@ -151,7 +151,7 @@ function editEquip(id) {
   document.getElementById('e-status').value  = e.status || 'Em uso';
   document.getElementById('e-obs').value     = e.obs    || '';
 
-  // Popula e seta loja
+  // Preenche e seleciona a loja
   const lojaEl = document.getElementById('e-loja');
   if (lojaEl && !lojaEl.dataset.populated) {
     LOJAS.forEach(l => {

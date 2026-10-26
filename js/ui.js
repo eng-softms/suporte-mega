@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════
-   SUPORTE MEGA – UI helpers (toast, modal,
-   navegação, tema, sidebar)
+   SUPORTE MEGA – Auxiliares da interface
+   (notificações, janelas modais, navegação, tema e barra lateral)
    ═══════════════════════════════════════════ */
 
-// ── Toast ──
+// ── Notificações ──
 function toast(msg, type = 'ok') {
   const c  = document.getElementById('toasts');
   const el = document.createElement('div');
@@ -13,18 +13,18 @@ function toast(msg, type = 'ok') {
   setTimeout(() => el.remove(), 3500);
 }
 
-// ── Modal ──
+// ── Janelas modais ──
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// Fecha ao clicar no overlay
+// Fecha ao clicar na camada de sobreposição
 document.addEventListener('click', ev => {
   if (ev.target.classList.contains('modal-overlay')) {
     ev.target.classList.remove('open');
   }
 });
 
-// ── Sidebar ──
+// ── Barra lateral ──
 function toggleSidebar() {
   const s = document.getElementById('sidebar');
   const o = document.getElementById('nav-overlay');
@@ -48,7 +48,7 @@ function navigate(page) {
   document.getElementById('topbar-title').textContent = PAGE_TITLES[page] || page;
   closeSidebar();
 
-  // Hooks por página
+  // Ações executadas ao abrir cada página
   if (page === 'relatorios')   renderRelatorios();
   if (page === 'chamados')     populateLojaFilter();
   if (page === 'equipamentos') populateLojaFilterEquip();
@@ -72,7 +72,7 @@ try {
   if (t) document.documentElement.dataset.theme = t;
 } catch (e) {}
 
-// ── Helpers de formatação ──
+// ── Funções auxiliares de formatação ──
 function fmtDate(ts) {
   if (!ts) return '–';
   return new Date(ts).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -117,12 +117,12 @@ function setText(id, val) {
   if (el) el.textContent = val;
 }
 
-// ── Loading indicator ──
+// ── Indicador de carregamento ──
 function setLoading(on) {
   document.getElementById('loading-indicator').style.display = on ? 'flex' : 'none';
 }
 
-// ── Inicialização da UI ──
+// ── Inicialização da interface ──
 function initUI() {
   // Restaura página
   try {

@@ -2,11 +2,11 @@
    SUPORTE MEGA – Autenticação e perfis
    ═══════════════════════════════════════════ */
 
-let currentUser    = null;   // objeto Supabase auth.User
-let currentProfile = null;   // { id, display_name, role, email }
+let currentUser    = null;   // Objeto do usuário autenticado no Supabase
+let currentProfile = null;   // Perfil: id, nome de exibição, função e e-mail
 
 // ─────────────────────────────────────────
-// Tela de login
+// Tela de acesso
 // ─────────────────────────────────────────
 function showLoginTab(tab) {
   document.getElementById('form-login').style.display    = tab === 'login'    ? '' : 'none';
@@ -24,7 +24,7 @@ function setLoginErr(form, msg) {
   el.classList.toggle('show', !!msg);
 }
 
-// ── Entrar ──
+// ── Acesso à conta ──
 async function doLogin() {
   const email = document.getElementById('l-email').value.trim();
   const senha = document.getElementById('l-senha').value;
@@ -45,10 +45,10 @@ async function doLogin() {
       : error.message;
     setLoginErr('l', msg);
   }
-  // Se OK, onAuthStateChange dispara showApp() automaticamente
+  // Se der certo, onAuthStateChange chama showApp() automaticamente.
 }
 
-// ── Cadastrar ──
+// ── Cadastro de conta ──
 async function doRegister() {
   const nome  = document.getElementById('r-nome').value.trim();
   const email = document.getElementById('r-email').value.trim();
@@ -71,7 +71,7 @@ async function doRegister() {
 
   if (error) { setLoginErr('r', error.message); return; }
 
-  // Cria o perfil imediatamente (o trigger SQL faz o mesmo, mas garantimos aqui)
+  // Cria o perfil imediatamente (o gatilho SQL faz o mesmo, mas garantimos aqui).
   if (data?.user) {
     await supa.from('profiles').upsert({
       id:           data.user.id,
@@ -81,22 +81,22 @@ async function doRegister() {
     });
   }
 
-  // Supabase pode exigir confirmação de e-mail (depende das configs do projeto)
+  // O Supabase pode exigir confirmação de e-mail (depende das configurações do projeto).
   if (!data?.session) {
     toast('Conta criada! Verifique seu e-mail para confirmar.', 'info');
     showLoginTab('login');
   }
-  // Se não precisar de confirmação, onAuthStateChange já faz o login
+  // Se a confirmação não for necessária, onAuthStateChange já inicia a sessão.
 }
 
-// ── Sair ──
+// ── Encerrar sessão ──
 async function doLogout() {
   toggleUserMenu(false);
   await supa.auth.signOut();
 }
 
 // ─────────────────────────────────────────
-// Listener de sessão (dispara em login/logout)
+// Observador da sessão (dispara ao entrar ou sair)
 // ─────────────────────────────────────────
 function initAuth() {
   supa.auth.onAuthStateChange(async (event, session) => {
@@ -154,14 +154,14 @@ function updateUserMenuUI() {
   document.getElementById('dd-name').textContent  = p.display_name;
   document.getElementById('dd-email').textContent = p.email || currentUser?.email || '';
 
-  // Badge de admin no dropdown
+  // Selo de administrador no menu suspenso
   const badge = document.getElementById('dd-role-badge');
   if (badge) {
     badge.className  = `role-badge ${p.role === 'admin' ? 'role-admin' : 'role-user'}`;
     badge.textContent = p.role === 'admin' ? 'Admin' : 'Usuário';
   }
 
-  // Mostrar/ocultar seção admin na sidebar
+  // Mostrar ou ocultar a seção de administração na barra lateral
   const adminSection = document.getElementById('nav-admin-section');
   if (adminSection) adminSection.style.display = p.role === 'admin' ? '' : 'none';
 
@@ -171,7 +171,7 @@ function updateUserMenuUI() {
 }
 
 // ─────────────────────────────────────────
-// Mostrar / ocultar app
+// Mostrar ou ocultar o aplicativo
 // ─────────────────────────────────────────
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
@@ -189,7 +189,7 @@ function hideApp() {
 }
 
 // ─────────────────────────────────────────
-// Menu do usuário (dropdown)
+// Menu do usuário (lista suspensa)
 // ─────────────────────────────────────────
 function toggleUserMenu(force) {
   const dd   = document.getElementById('user-dropdown');
@@ -264,7 +264,7 @@ async function savePassword() {
 }
 
 // ─────────────────────────────────────────
-// Gerenciar usuários (somente admin)
+// Gerenciar usuários (somente administrador)
 // ─────────────────────────────────────────
 async function loadUsuarios() {
   const el = document.getElementById('usuarios-list');

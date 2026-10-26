@@ -29,7 +29,7 @@ function renderRelatorios() {
   const total = data.length;
   setText('rel-total', total);
 
-  // ── Métricas de SLA ──
+  // ── Métricas de nível de serviço (SLA) ──
   const fechados = data.filter(c => (c.status === 'Fechado' || c.status === 'Resolvido') && c.atualizadoEm && c.criadoEm);
   if (fechados.length) {
     const avg = fechados.reduce((s, c) => s + (c.atualizadoEm - c.criadoEm), 0) / fechados.length;
@@ -48,7 +48,7 @@ function renderRelatorios() {
   const urgentesResolvidos = data.filter(c => c.prioridade === 'Urgente' && (c.status === 'Fechado' || c.status === 'Resolvido')).length;
   setText('rel-urgentes-resolvidos', `${urgentesResolvidos}/${urgentesTotal}`);
 
-  // ── Agrupamentos ──
+  // ── Dados agrupados ──
   const catC = {}, lojaC = {}, prioC = {}, statusC = {}, mesC = {};
 
   data.forEach(c => {

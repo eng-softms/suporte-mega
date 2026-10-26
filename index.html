@@ -26,13 +26,13 @@
       <div class="sub">Mega Feirão dos Calçados</div>
     </div>
 
-    <!-- Tabs -->
+    <!-- Abas -->
     <div class="login-tabs">
       <button class="login-tab active" id="tab-login"    onclick="showLoginTab('login')">Entrar</button>
       <button class="login-tab"        id="tab-register" onclick="showLoginTab('register')">Cadastrar</button>
     </div>
 
-    <!-- Form: Entrar -->
+    <!-- Formulário de acesso -->
     <div id="form-login" style="display:flex;flex-direction:column;gap:14px">
       <div class="form-group">
         <label class="form-label">E-mail</label>
@@ -48,7 +48,7 @@
       </button>
     </div>
 
-    <!-- Form: Cadastrar -->
+    <!-- Formulário de cadastro -->
     <div id="form-register" style="display:none;flex-direction:column;gap:14px">
       <div class="form-group">
         <label class="form-label">Nome / Apelido *</label>
@@ -76,7 +76,7 @@
      ════════════════════════════════════════ -->
 <div class="app" id="app-root" style="display:none">
 
-  <!-- ── Sidebar ── -->
+  <!-- ── Barra lateral ── -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
       <div class="brand">🖥 Suporte TI</div>
@@ -100,7 +100,7 @@
       </button>
     </div>
 
-    <!-- Gestão: somente admin -->
+    <!-- Gestão: somente para administradores -->
     <div class="nav-section" id="nav-admin-section" style="display:none">
       <div class="nav-label">Gestão (Admin)</div>
       <button class="nav-item" data-page="equipamentos" onclick="navigate('equipamentos')">
@@ -125,13 +125,13 @@
     </div>
   </nav>
 
-  <!-- Overlay mobile -->
+  <!-- Camada de sobreposição para dispositivos móveis -->
   <div id="nav-overlay" onclick="closeSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99"></div>
 
-  <!-- ── Main ── -->
+  <!-- ── Conteúdo principal ── -->
   <div class="main">
 
-    <!-- Topbar -->
+    <!-- Barra superior -->
     <header class="topbar">
       <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
@@ -176,7 +176,7 @@
       </div>
     </header>
 
-    <!-- ════════ DASHBOARD ════════ -->
+    <!-- ════════ PAINEL ════════ -->
     <section class="page active" id="page-dashboard">
       <div class="stats-row">
         <div class="stat-card accent">
@@ -358,7 +358,7 @@
       </form>
     </section>
 
-    <!-- ════════ EQUIPAMENTOS (admin) ════════ -->
+    <!-- ════════ EQUIPAMENTOS (administrador) ════════ -->
     <section class="page" id="page-equipamentos">
       <div class="section-header">
         <span class="section-title">Inventário de Equipamentos</span>
@@ -406,7 +406,7 @@
       </div>
     </section>
 
-    <!-- ════════ RELATÓRIOS (admin) ════════ -->
+    <!-- ════════ RELATÓRIOS (administrador) ════════ -->
     <section class="page" id="page-relatorios">
       <div class="section-header">
         <span class="section-title">Relatórios</span>
@@ -427,7 +427,7 @@
         </div>
       </div>
 
-      <!-- KPIs -->
+      <!-- Indicadores -->
       <div class="stats-row">
         <div class="stat-card accent">
           <div class="stat-label">Total no período</div>
@@ -483,7 +483,7 @@
       </div>
     </section>
 
-    <!-- ════════ USUÁRIOS (admin) ════════ -->
+    <!-- ════════ USUÁRIOS (administrador) ════════ -->
     <section class="page" id="page-usuarios">
       <div class="section-header">
         <span class="section-title">Gerenciar Usuários</span>
@@ -495,14 +495,14 @@
       <div id="usuarios-list"><div class="loading-row"><div class="spinner"></div> Carregando…</div></div>
     </section>
 
-  </div><!-- /main -->
-</div><!-- /app-root -->
+  </div><!-- /conteúdo principal -->
+</div><!-- /raiz do aplicativo -->
 
 <!-- ════════════════════════════════════════
      MODAIS
      ════════════════════════════════════════ -->
 
-<!-- Modal: Detalhe do chamado -->
+<!-- Janela modal: detalhes do chamado -->
 <div class="modal-overlay" id="modal-detalhe">
   <div class="modal" style="max-width:660px">
     <div class="modal-header">
@@ -513,7 +513,7 @@
   </div>
 </div>
 
-<!-- Modal: Novo / Editar Equipamento -->
+<!-- Janela modal: novo / editar equipamento -->
 <div class="modal-overlay" id="modal-equip">
   <div class="modal">
     <div class="modal-header">
@@ -594,7 +594,7 @@
   </div>
 </div>
 
-<!-- Modal: Editar perfil -->
+<!-- Janela modal: editar perfil -->
 <div class="modal-overlay" id="modal-perfil">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
@@ -613,7 +613,7 @@
   </div>
 </div>
 
-<!-- Modal: Alterar senha -->
+<!-- Janela modal: alterar senha -->
 <div class="modal-overlay" id="modal-senha">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
@@ -644,10 +644,10 @@
 <!-- ════════════════════════════════════════
      SCRIPTS
      ════════════════════════════════════════ -->
-<!-- Supabase JS v2 -->
+<!-- Biblioteca Supabase JS v2 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 
-<!-- Módulos da aplicação (ordem importa) -->
+<!-- Módulos da aplicação (a ordem é importante) -->
 <script src="js/config.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/auth.js"></script>

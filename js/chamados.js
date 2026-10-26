@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════
-   SUPORTE MEGA – Chamados (CRUD + render)
+   SUPORTE MEGA – Chamados (operações de cadastro, consulta, atualização e exclusão + renderização)
    ═══════════════════════════════════════════ */
 
 let allChamados = [];
@@ -27,7 +27,7 @@ async function loadChamados() {
 }
 
 // ─────────────────────────────────────────
-// Normaliza snake_case → camelCase + timestamps em ms
+// Converte snake_case para camelCase e datas para milissegundos
 // ─────────────────────────────────────────
 function normalizeRow(r) {
   return {
@@ -38,7 +38,7 @@ function normalizeRow(r) {
 }
 
 // ─────────────────────────────────────────
-// Realtime
+// Atualizações em tempo real
 // ─────────────────────────────────────────
 function subscribeChamados() {
   supa.channel('chamados-realtime')
@@ -49,7 +49,7 @@ function subscribeChamados() {
 }
 
 // ─────────────────────────────────────────
-// Render principal
+// Renderização principal
 // ─────────────────────────────────────────
 function renderAll() {
   renderDashboard();
@@ -99,7 +99,7 @@ function sortBy(field) {
 }
 
 // ─────────────────────────────────────────
-// Dashboard
+// Painel
 // ─────────────────────────────────────────
 function renderDashboard() {
   const abertos    = allChamados.filter(c => c.status === 'Aberto').length;
@@ -113,7 +113,7 @@ function renderDashboard() {
   setText('stat-urgentes',  urgentes);
   setText('stat-fechados',  fechados);
 
-  // badge nav
+  // Indicador de chamados na navegação
   const badgeEl = document.getElementById('badge-abertos');
   if (badgeEl) {
     badgeEl.textContent = abertos;
@@ -207,7 +207,7 @@ function populateLojaFilter() {
 }
 
 // ─────────────────────────────────────────
-// Modal de detalhe do chamado
+// Janela modal com os detalhes do chamado
 // ─────────────────────────────────────────
 function openDetalhe(id) {
   const c = allChamados.find(x => x.id === id);
@@ -331,7 +331,7 @@ async function deleteChamado(id) {
 // Formulário: Novo Chamado
 // ─────────────────────────────────────────
 function initFormNovo() {
-  // Popula select de lojas
+  // Preenche a lista de lojas
   const lojasSel = document.getElementById('c-loja');
   if (lojasSel && !lojasSel.dataset.populated) {
     LOJAS.forEach(l => {
@@ -341,7 +341,7 @@ function initFormNovo() {
     lojasSel.dataset.populated = '1';
   }
 
-  // Popula categorias
+  // Preenche as categorias
   const catSel = document.getElementById('c-categoria');
   if (catSel && !catSel.dataset.populated) {
     CATEGORIAS.forEach(c => {
@@ -351,7 +351,7 @@ function initFormNovo() {
     catSel.dataset.populated = '1';
   }
 
-  // Popula lista de equipamentos no select
+  // Preenche a lista de equipamentos no campo de seleção
   populateEquipSelect();
 }
 
@@ -359,7 +359,7 @@ function populateEquipSelect() {
   const sel = document.getElementById('c-equipamento');
   if (!sel) return;
   const val = sel.value;
-  // Mantém apenas a option vazia
+  // Mantém apenas a opção vazia
   while (sel.options.length > 1) sel.remove(1);
   allEquipamentos.forEach(e => {
     const o = document.createElement('option');
@@ -417,7 +417,7 @@ async function submitChamado(ev) {
 }
 
 // ─────────────────────────────────────────
-// Exportar CSV
+// Exportar arquivo CSV
 // ─────────────────────────────────────────
 async function exportCSV() {
   const list = getSortedFiltered();

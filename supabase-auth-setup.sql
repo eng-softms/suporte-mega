@@ -1,11 +1,11 @@
 -- ═══════════════════════════════════════════════════════════════
---  SUPORTE MEGA – Setup completo Auth + Perfis + RLS
---  Execute no SQL Editor do Supabase (uma vez)
+--  SUPORTE MEGA – Configuração completa de autenticação, perfis e RLS
+--  Execute uma vez no editor SQL do Supabase
 -- ═══════════════════════════════════════════════════════════════
 
 -- ──────────────────────────────────────────
--- 1. TABELA: profiles
---    Vinculada a auth.users via UUID
+-- 1. TABELA: perfis (profiles)
+--    Vinculada à tabela auth.users por meio do UUID
 -- ──────────────────────────────────────────
 create table if not exists public.profiles (
   id            uuid        primary key references auth.users (id) on delete cascade,
@@ -16,7 +16,7 @@ create table if not exists public.profiles (
 );
 
 -- ──────────────────────────────────────────
--- 2. TRIGGER: cria profile automaticamente
+-- 2. GATILHO: cria o perfil automaticamente
 --    quando um novo usuário se cadastra
 -- ──────────────────────────────────────────
 create or replace function public.handle_new_user()
@@ -70,8 +70,8 @@ alter table public.chamados      enable row level security;
 alter table public.equipamentos  enable row level security;
 
 -- ──────────────────────────────────────────
--- 6. Helper: verifica se o usuário é admin
---    (evita recursão em RLS usando security definer)
+-- 6. Função auxiliar: verifica se o usuário é administrador
+--    (evita recursão na RLS usando SECURITY DEFINER)
 -- ──────────────────────────────────────────
 create or replace function public.is_admin()
 returns boolean
@@ -86,7 +86,7 @@ as $$
 $$;
 
 -- ──────────────────────────────────────────
--- 7. POLÍTICAS: profiles
+-- 7. POLÍTICAS: perfis (profiles)
 -- ──────────────────────────────────────────
 drop policy if exists "profiles: leitura própria"   on public.profiles;
 drop policy if exists "profiles: leitura admin"     on public.profiles;
@@ -99,7 +99,7 @@ create policy "profiles: leitura própria"
   on public.profiles for select
   using (auth.uid() = id);
 
--- Admin lê todos os perfis
+-- Administrador lê todos os perfis
 create policy "profiles: leitura admin"
   on public.profiles for select
   using (public.is_admin());
@@ -110,13 +110,13 @@ create policy "profiles: atualização própria"
   using  (auth.uid() = id)
   with check (auth.uid() = id);
 
--- Admin edita qualquer perfil (para promover/rebaixar)
+-- Administrador edita qualquer perfil (para promover/rebaixar)
 create policy "profiles: atualização admin"
   on public.profiles for update
   using  (public.is_admin())
   with check (public.is_admin());
 
--- Inserção: o próprio usuário (trigger já faz isso, mas por segurança)
+-- Inserção: o próprio usuário (o gatilho já faz isso, mas mantemos por segurança)
 create policy "profiles: inserção pública"
   on public.profiles for insert
   with check (auth.uid() = id);
@@ -136,7 +136,7 @@ create policy "chamados: select own"
   on public.chamados for select
   using (auth.uid() = user_id);
 
--- Admin vê todos
+-- Administrador vê todos
 create policy "chamados: select admin"
   on public.chamados for select
   using (public.is_admin());
@@ -152,19 +152,19 @@ create policy "chamados: update own"
   using  (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- Admin pode editar qualquer chamado
+-- Administrador pode editar qualquer chamado
 create policy "chamados: update admin"
   on public.chamados for update
   using  (public.is_admin())
   with check (public.is_admin());
 
--- Somente admin pode excluir
+-- Somente o administrador pode excluir
 create policy "chamados: delete admin"
   on public.chamados for delete
   using (public.is_admin());
 
 -- ──────────────────────────────────────────
--- 9. POLÍTICAS: equipamentos (somente admin)
+-- 9. POLÍTICAS: equipamentos (somente administrador)
 -- ──────────────────────────────────────────
 drop policy if exists "equip: select admin" on public.equipamentos;
 drop policy if exists "equip: insert admin" on public.equipamentos;
@@ -189,8 +189,8 @@ create policy "equip: delete admin"
   using (public.is_admin());
 
 -- ──────────────────────────────────────────
--- 10. Torna você (David) o primeiro admin
---     Execute APÓS fazer seu cadastro no site.
+-- 10. Torna você (David) o primeiro administrador
+--     Execute APÓS criar sua conta no site.
 --     Substitua o e-mail se necessário.
 -- ──────────────────────────────────────────
 -- update public.profiles
@@ -199,6 +199,6 @@ create policy "equip: delete admin"
 
 -- ═══════════════════════════════════════════════════════════════
 --  FIM DO SCRIPT
---  Depois de rodar, descomente e execute o UPDATE acima
---  para se tornar admin na primeira vez.
+--  Depois de executar, remova os marcadores de comentário do UPDATE acima
+--  e execute-o para se tornar administrador pela primeira vez.
 -- ═══════════════════════════════════════════════════════════════

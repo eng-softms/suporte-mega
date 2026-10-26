@@ -34,7 +34,7 @@ const STATUS_EQUIP   = ['Em uso','Disponível','Em manutenção','Descartado'];
 const PRIO_ORDER   = { 'Urgente':0,'Alta':1,'Média':2,'Baixa':3 };
 const STATUS_ORDER = { 'Aberto':0,'Em Andamento':1,'Aguardando usuário':2,'Resolvido':3,'Fechado':4,'Cancelado':5 };
 
-// ── Página titles ──
+// ── Títulos das páginas ──
 const PAGE_TITLES = {
   dashboard:   'Dashboard',
   chamados:    'Chamados',

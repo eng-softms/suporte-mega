@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════
-   SUPORTE MEGA – Bootstrap principal
-   Conecta Supabase, inicia auth e realtime
+   SUPORTE MEGA – Inicialização principal
+   Conecta ao Supabase e inicia a autenticação e as atualizações em tempo real
    ═══════════════════════════════════════════ */
 
 // ── Instância global do Supabase ──
 const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
 
-// ── Carrega DB e assina realtime ──
+// ── Carrega o banco de dados e assina as atualizações em tempo real ──
 async function initDb() {
   setLoading(true);
   try {
@@ -24,9 +24,9 @@ async function initDb() {
   }
 }
 
-// ── DOMContentLoaded ──
+// ── Após o carregamento do documento ──
 window.addEventListener('DOMContentLoaded', () => {
-  // A UI é inicializada depois do login (showApp → initDb → initUI)
-  // mas preparamos o tema e ouvintes desde já
-  initAuth();   // auth.js — monitora sessão Supabase e chama showApp/hideApp
+  // A interface é inicializada depois do login (showApp → initDb → initUI),
+  // mas preparamos o tema e os ouvintes desde já.
+  initAuth();   // auth.js — monitora a sessão do Supabase e chama showApp/hideApp
 });
