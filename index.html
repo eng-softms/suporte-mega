@@ -22,7 +22,7 @@
   <div class="login-box">
 
     <div class="login-logo">
-      <div class="brand">🖥 Suporte TI</div>
+      <div class="brand"> Suporte TI</div>
       <div class="sub">Mega Feirão dos Calçados</div>
     </div>
 
@@ -346,6 +346,14 @@
         <div class="field">
           <label for="c-descricao">Descrição detalhada</label>
           <textarea id="c-descricao" rows="5" placeholder="Descreva o problema com o máximo de detalhes: o que aconteceu, quando começou, quais ações já foram tentadas…"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="c-imagem">Anexar imagem (opcional)</label>
+          <input id="c-imagem" type="file" accept="image/jpeg,image/png,image/gif,image/webp" capture="environment" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2);color:var(--fg)">
+          <div id="c-imagem-preview" style="display:none;margin-top:8px">
+            <img id="c-imagem-thumb" alt="Pré-visualização da imagem anexada" style="display:block;max-width:100%;max-height:220px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2)">
+          </div>
         </div>
 
         <div style="display:flex;gap:10px">

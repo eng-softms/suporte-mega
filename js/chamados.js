@@ -5,6 +5,7 @@
 let allChamados = [];
 let sortField   = 'criado_em';
 let sortDir     = 'desc';
+let detailRequestId = 0;
 
 // ─────────────────────────────────────────
 // Carregamento
@@ -35,6 +36,83 @@ function normalizeRow(r) {
     criadoEm:     r.criado_em     ? new Date(r.criado_em).getTime()     : null,
     atualizadoEm: r.atualizado_em ? new Date(r.atualizado_em).getTime() : null,
   };
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function formatDescricaoHtml(value = '', imageUrl = '') {
+  const raw = String(value || '').trim();
+  if (!raw) return 'Sem descrição.';
+
+  const imageMatch = raw.match(/\[imagem-storage:\s*([^\]\r\n]+)\]/);
+  const legacyImageMatch = raw.match(/data:image\/(?:jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+/i);
+  const description = raw
+    .replace(/\[imagem-storage:\s*[^\]\r\n]+\]/g, '')
+    .replace(/data:image\/(?:jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+/ig, '')
+    .trim();
+  imageUrl = imageUrl || legacyImageMatch?.[0] || '';
+  const text = escapeHtml(description || 'Sem descrição.').replace(/\n/g, '<br>');
+  const imageHtml = imageUrl
+    ? `<img src="${escapeHtml(imageUrl)}" alt="Imagem anexada ao chamado" style="display:block;max-width:100%;margin-top:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);">`
+    : '';
+  return `${text}${imageMatch || legacyImageMatch ? imageHtml : ''}`;
+}
+
+function bindImagePreview() {
+  const input = document.getElementById('c-imagem');
+  const previewWrap = document.getElementById('c-imagem-preview');
+  const thumb = document.getElementById('c-imagem-thumb');
+  if (!input || !previewWrap || !thumb) return;
+
+  input.onchange = () => {
+    const file = input.files && input.files[0];
+    if (!file) {
+      previewWrap.style.display = 'none';
+      thumb.src = '';
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast('Selecione apenas imagens.', 'err');
+      input.value = '';
+      previewWrap.style.display = 'none';
+      thumb.src = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      thumb.src = reader.result;
+      previewWrap.style.display = 'block';
+    };
+    reader.onerror = () => {
+      toast('Não foi possível carregar a pré-visualização da imagem.', 'err');
+      input.value = '';
+      previewWrap.style.display = 'none';
+      thumb.src = '';
+    };
+    reader.readAsDataURL(file);
+  };
+
+  input.form?.addEventListener('reset', () => {
+    setTimeout(() => {
+      previewWrap.style.display = 'none';
+      thumb.src = '';
+    }, 0);
+  });
+}
+
+function getStorageImagePath(description) {
+  const match = String(description || '').match(/\[imagem-storage:\s*([^\]\r\n]+)\]/);
+  const path = match?.[1]?.trim() || '';
+  return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|gif|webp)$/i.test(path) ? path : '';
 }
 
 // ─────────────────────────────────────────
@@ -209,9 +287,10 @@ function populateLojaFilter() {
 // ─────────────────────────────────────────
 // Janela modal com os detalhes do chamado
 // ─────────────────────────────────────────
-function openDetalhe(id) {
+async function openDetalhe(id) {
   const c = allChamados.find(x => x.id === id);
   if (!c) return;
+  const requestId = ++detailRequestId;
 
   const isAdmin   = currentProfile?.role === 'admin';
   const isMine    = c.user_id === currentUser?.id;
@@ -221,6 +300,21 @@ function openDetalhe(id) {
   const statusOptions = STATUS_CHAMADO.map(s =>
     `<option value="${s}" ${c.status === s ? 'selected' : ''}>${s}</option>`
   ).join('');
+
+  let imageUrl = '';
+  const imagePath = getStorageImagePath(c.descricao);
+  if (imagePath) {
+    try {
+      const { data, error } = await supa.storage
+        .from('chamados-imagens')
+        .createSignedUrl(imagePath, 3600);
+      if (error) throw error;
+      imageUrl = data.signedUrl;
+    } catch (e) {
+      toast('Não foi possível carregar a imagem: ' + e.message, 'err');
+    }
+  }
+  if (requestId !== detailRequestId) return;
 
   document.getElementById('md-titulo').textContent = c.assunto;
   document.getElementById('md-body').innerHTML = `
@@ -263,7 +357,7 @@ function openDetalhe(id) {
 
     <div>
       <div class="detail-field-label" style="margin-bottom:6px">Descrição</div>
-      <div class="detail-body">${esc(c.descricao || 'Sem descrição.')}</div>
+      <div class="detail-body">${formatDescricaoHtml(c.descricao, imageUrl)}</div>
     </div>
 
     ${canEdit ? `
@@ -331,6 +425,8 @@ async function deleteChamado(id) {
 // Formulário: Novo Chamado
 // ─────────────────────────────────────────
 function initFormNovo() {
+  bindImagePreview();
+
   // Preenche a lista de lojas
   const lojasSel = document.getElementById('c-loja');
   if (lojasSel && !lojasSel.dataset.populated) {
@@ -382,6 +478,8 @@ async function submitChamado(ev) {
   const equipamento= document.getElementById('c-equipamento').value;
   const assunto    = document.getElementById('c-assunto').value.trim();
   const descricao  = document.getElementById('c-descricao').value.trim();
+  const inputImage = document.getElementById('c-imagem');
+  const imageFile = inputImage?.files?.[0] || null;
 
   if (!nome || !loja || !categoria || !assunto) {
     toast('Preencha os campos obrigatórios (*).', 'err'); return;
@@ -389,27 +487,75 @@ async function submitChamado(ev) {
 
   btn.disabled = true; btn.textContent = 'Enviando…';
 
-  const now = new Date().toISOString();
-  const payload = {
-    user_id:        currentUser?.id || null,
-    email_abertura: currentUser?.email || null,
-    nome, contato, loja, categoria, prioridade,
-    equipamento: equipamento || null,
-    assunto, descricao,
-    status:       'Aberto',
-    criado_em:    now,
-    atualizado_em: now,
-  };
-
+  let uploadedImagePath = '';
   try {
+    if (imageFile) {
+      const fileExtensions = {
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+      };
+      const extension = fileExtensions[imageFile.type];
+      if (!extension) {
+        throw new Error('Use uma imagem JPG, PNG, GIF ou WebP.');
+      }
+      if (imageFile.size > 2 * 1024 * 1024) {
+        throw new Error('A imagem deve ter até 2 MB.');
+      }
+      if (!currentUser?.id) {
+        throw new Error('Faça login novamente antes de anexar uma imagem.');
+      }
+
+      uploadedImagePath = `${currentUser.id}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supa.storage
+        .from('chamados-imagens')
+        .upload(uploadedImagePath, imageFile, {
+          contentType: imageFile.type,
+          upsert: false,
+        });
+      if (uploadError) throw uploadError;
+    }
+
+    const descricaoFinal = uploadedImagePath
+      ? `${descricao}${descricao ? '\n\n' : ''}[imagem-storage: ${uploadedImagePath}]`
+      : descricao;
+    const now = new Date().toISOString();
+    const payload = {
+      user_id:        currentUser?.id || null,
+      email_abertura: currentUser?.email || null,
+      nome, contato, loja, categoria, prioridade,
+      equipamento: equipamento || null,
+      assunto, descricao: descricaoFinal,
+      status:       'Aberto',
+      criado_em:    now,
+      atualizado_em: now,
+    };
+
     const { error } = await supa.from('chamados').insert(payload);
     if (error) throw error;
+    uploadedImagePath = '';
     toast('Chamado aberto com sucesso!', 'ok');
     ev.target.reset();
-    // Restaura nome
+    const previewWrap = document.getElementById('c-imagem-preview');
+    const thumb = document.getElementById('c-imagem-thumb');
+    if (previewWrap) previewWrap.style.display = 'none';
+    if (thumb) thumb.src = '';
     if (currentProfile) document.getElementById('c-nome').value = currentProfile.display_name;
     navigate('chamados');
   } catch (e) {
+    if (uploadedImagePath) {
+      try {
+        const { error: cleanupError } = await supa.storage
+          .from('chamados-imagens')
+          .remove([uploadedImagePath]);
+        if (cleanupError) {
+          console.error('Não foi possível remover a imagem após falha ao abrir o chamado:', cleanupError);
+        }
+      } catch (cleanupError) {
+        console.error('Não foi possível remover a imagem após falha ao abrir o chamado:', cleanupError);
+      }
+    }
     toast('Erro ao enviar: ' + e.message, 'err');
   } finally {
     btn.disabled = false; btn.textContent = 'Abrir Chamado';
