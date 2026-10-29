@@ -171,8 +171,12 @@ function getStorageImagePaths(description) {
 // ─────────────────────────────────────────
 // Atualizações em tempo real
 // ─────────────────────────────────────────
+let chamadosChannel = null;
+
 function subscribeChamados() {
-  supa.channel('chamados-realtime')
+  // Evita assinaturas duplicadas quando o usuário sai e entra de novo
+  if (chamadosChannel) supa.removeChannel(chamadosChannel);
+  chamadosChannel = supa.channel('chamados-realtime')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'chamados' }, async () => {
       await loadChamados();
     })
@@ -197,7 +201,7 @@ function getFilteredChamados() {
   const now     = Date.now();
 
   return allChamados.filter(c => {
-    if (status  && c.status     !== status)  return false;
+    if (status  && !matchStatus(c.status, status)) return false;
     if (prio    && c.prioridade !== prio)     return false;
     if (cat     && c.categoria  !== cat)      return false;
     if (loja    && c.loja       !== loja)      return false;
@@ -209,6 +213,30 @@ function getFilteredChamados() {
     }
     return true;
   });
+}
+
+// Grupos de status usados pelos cards do painel e pelo filtro
+const STATUS_GRUPOS = {
+  ativos:     s => s !== 'Fechado' && s !== 'Cancelado',
+  andamento:  s => s === 'Em Andamento' || s === 'Aguardando usuário',
+  concluidos: s => s === 'Fechado' || s === 'Resolvido',
+};
+
+function matchStatus(status, filtro) {
+  return STATUS_GRUPOS[filtro] ? STATUS_GRUPOS[filtro](status) : status === filtro;
+}
+
+// Abre a lista de chamados já filtrada (usado pelos cards do painel)
+function openChamadosFiltrados({ status = '', prioridade = '', periodo = '0' } = {}) {
+  navigate('chamados');
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  set('f-busca', '');
+  set('f-categoria', '');
+  set('f-loja', '');
+  set('f-status', status);
+  set('f-prioridade', prioridade);
+  set('f-periodo', periodo);
+  renderChamadosTable(getSortedFiltered());
 }
 
 function getSortedFiltered() {
@@ -239,10 +267,10 @@ function renderDashboard() {
   const thirtyDays = Date.now() - 30 * 86400000;
   const fechados   = allChamados.filter(c => (c.status === 'Fechado' || c.status === 'Resolvido') && c.atualizadoEm > thirtyDays).length;
 
-  setText('stat-abertos',   abertos);
-  setText('stat-andamento', andamento);
-  setText('stat-urgentes',  urgentes);
-  setText('stat-fechados',  fechados);
+  setStat('stat-abertos',   abertos);
+  setStat('stat-andamento', andamento);
+  setStat('stat-urgentes',  urgentes);
+  setStat('stat-fechados',  fechados);
 
   // Indicador de chamados na navegação
   const badgeEl = document.getElementById('badge-abertos');
@@ -262,11 +290,11 @@ function renderDashboard() {
       recentesEl.innerHTML = '<div class="empty-state" style="padding:16px"><p>Nenhum chamado aberto</p></div>';
     } else {
       recentesEl.innerHTML = recentes.map(c => `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"
+        <div class="recent-item" role="button" tabindex="0" data-open-id="${c.id}"
              onclick="openDetalhe('${c.id}')">
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.assunto)}</div>
-            <div style="font-size:11px;color:var(--fg3)">${esc(c.loja)} · ${esc(c.nome)} · ${fmtRelTime(c.criadoEm)}</div>
+            <div class="recent-title">${esc(c.assunto)}</div>
+            <div class="recent-meta">${esc(c.loja)} · ${esc(c.nome)} · ${fmtRelTime(c.criadoEm)}</div>
           </div>
           <div style="display:flex;gap:4px;flex-shrink:0">${prioBadge(c.prioridade)}</div>
         </div>`).join('');
@@ -282,6 +310,19 @@ function renderDashboard() {
   renderBars('cat-chart', catEntries, 'var(--accent)');
 }
 
+// Atualiza um indicador e dá um "pulo" quando o número muda
+function setStat(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const changed = el.textContent !== String(val);
+  el.textContent = val;
+  if (changed && el.textContent !== '–') {
+    el.classList.remove('bump');
+    void el.offsetWidth; // reinicia a animação
+    el.classList.add('bump');
+  }
+}
+
 // ─────────────────────────────────────────
 // Tabela de chamados
 // ─────────────────────────────────────────
@@ -291,8 +332,14 @@ function renderChamadosTable(list) {
 
   const isAdmin = currentProfile?.role === 'admin';
 
+  // Seta indicando a coluna e a direção da ordenação
+  document.querySelectorAll('#page-chamados th[data-sort]').forEach(th => {
+    th.classList.toggle('sorted-asc',  th.dataset.sort === sortField && sortDir === 'asc');
+    th.classList.toggle('sorted-desc', th.dataset.sort === sortField && sortDir === 'desc');
+  });
+
   if (!list.length) {
-    el.innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" style="text-align:center;padding:32px;color:var(--fg3)">Nenhum chamado encontrado</td></tr>`;
+    el.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--fg3)">Nenhum chamado encontrado</td></tr>`;
     return;
   }
 
@@ -301,7 +348,7 @@ function renderChamadosTable(list) {
       ? `<td>${esc(c.nome)}<br><small style="color:var(--fg3)">${esc(c.email_abertura || '')}</small></td>`
       : `<td>${esc(c.nome)}</td>`;
 
-    return `<tr onclick="openDetalhe('${c.id}')" style="cursor:pointer">
+    return `<tr class="row-click" tabindex="0" data-open-id="${c.id}" onclick="openDetalhe('${c.id}')">
       <td><span style="font-family:var(--mono);font-size:11px;color:var(--fg3)">#${c.id.substring(0,6)}</span></td>
       <td class="wrap" style="max-width:220px"><strong>${esc(c.assunto)}</strong><br><small style="color:var(--fg3)">${esc(c.categoria)}</small></td>
       ${colSolicitante}
@@ -310,7 +357,7 @@ function renderChamadosTable(list) {
       <td>${statusBadge(c.status)}</td>
       <td><span style="font-size:12px;color:var(--fg3)">${fmtDate(c.criadoEm)}</span></td>
       <td onclick="event.stopPropagation()" style="white-space:nowrap">
-        ${isAdmin ? `<button class="btn btn-ghost btn-sm" onclick="openDetalhe('${c.id}')">Ver</button>` : `<button class="btn btn-ghost btn-sm" onclick="openDetalhe('${c.id}')">Ver</button>`}
+        <button class="btn btn-ghost btn-sm" onclick="openDetalhe('${c.id}')">Ver</button>
       </td>
     </tr>`;
   }).join('');
@@ -346,7 +393,6 @@ async function openDetalhe(id) {
   const requestId = ++detailRequestId;
 
   const isAdmin   = currentProfile?.role === 'admin';
-  const isMine    = c.user_id === currentUser?.id;
   const canEdit   = isAdmin;
   const canDelete = isAdmin;
 
@@ -356,6 +402,7 @@ async function openDetalhe(id) {
 
   const imagePaths = getStorageImagePaths(c.descricao);
   const imageUrls = [];
+  if (imagePaths.length) setLoading(true);
   for (const imagePath of imagePaths) {
     try {
       const { data, error } = await supa.storage
@@ -367,6 +414,7 @@ async function openDetalhe(id) {
       toast('Não foi possível carregar uma imagem: ' + e.message, 'err');
     }
   }
+  if (imagePaths.length) setLoading(false);
   if (requestId !== detailRequestId) return;
 
   document.getElementById('md-titulo').textContent = c.assunto;
@@ -514,7 +562,6 @@ async function submitChamado(ev) {
   const equipamento= document.getElementById('c-equipamento').value;
   const assunto    = document.getElementById('c-assunto').value.trim();
   const descricao  = document.getElementById('c-descricao').value.trim();
-  const inputImage = document.getElementById('c-imagem');
   const imageFiles = [...selectedImageFiles];
   const maxImages = 5;
   const maxImageSize = 2 * 1024 * 1024;
@@ -540,6 +587,7 @@ async function submitChamado(ev) {
     return;
   }
 
+  const btnHtml = btn.innerHTML;
   btn.disabled = true;
 
   const uploadedImagePaths = [];
@@ -605,7 +653,7 @@ async function submitChamado(ev) {
     const errorMessage = e?.message || e?.details || 'Erro desconhecido.';
     toast('Erro ao enviar: ' + errorMessage, 'err');
   } finally {
-    btn.disabled = false; btn.textContent = 'Abrir Chamado';
+    btn.disabled = false; btn.innerHTML = btnHtml;
   }
 }
 

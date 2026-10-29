@@ -10,8 +10,9 @@ let isPasswordRecovery = false;
 // Tela de acesso
 // ─────────────────────────────────────────
 function showLoginTab(tab) {
-  document.getElementById('form-login').style.display    = tab === 'login'    ? '' : 'none';
-  document.getElementById('form-register').style.display = tab === 'register' ? '' : 'none';
+  // 'flex' (e não '') para manter o espaçamento entre os campos
+  document.getElementById('form-login').style.display    = tab === 'login'    ? 'flex' : 'none';
+  document.getElementById('form-register').style.display = tab === 'register' ? 'flex' : 'none';
   document.getElementById('form-forgot-password').style.display = 'none';
   document.getElementById('form-reset-password').style.display = 'none';
   document.querySelector('.login-tabs').style.display = '';
@@ -304,6 +305,7 @@ function hideApp() {
   document.getElementById('app-root').style.display     = 'none';
   allChamados    = [];
   allEquipamentos = [];
+  allPlanosInternet = [];
   setLoginErr('l', '');
   setLoginErr('r', '');
 }
@@ -315,11 +317,13 @@ function toggleUserMenu(force) {
   const dd   = document.getElementById('user-dropdown');
   const open = force !== undefined ? force : !dd.classList.contains('open');
   dd.classList.toggle('open', open);
+  document.querySelector('.user-menu-btn')?.setAttribute('aria-expanded', String(open));
 
   if (open) {
     const close = e => {
       if (!document.getElementById('user-menu-wrap').contains(e.target)) {
         dd.classList.remove('open');
+        document.querySelector('.user-menu-btn')?.setAttribute('aria-expanded', 'false');
         document.removeEventListener('click', close);
       }
     };

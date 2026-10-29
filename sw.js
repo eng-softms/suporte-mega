@@ -3,7 +3,7 @@
 //  Permite instalar o aplicativo e mantém recursos básicos em cache
 // ═══════════════════════════════════════════════════════
 
-const CACHE_NAME = 'suporte-mega-v2';
+const CACHE_NAME = 'suporte-mega-v3';
 
 // Arquivos que serão armazenados em cache para acesso básico sem conexão
 const ASSETS = [
@@ -19,8 +19,8 @@ const ASSETS = [
   './js/relatorios.js',
   './js/app.js',
   './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 // ── Instalação: armazena os recursos estáticos em cache ──────────────

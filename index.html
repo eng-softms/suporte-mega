@@ -10,6 +10,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f79ff">
+
   <!-- Estilos -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -183,7 +186,7 @@
 
       <!-- Menu do usuário -->
       <div class="user-menu-wrap" id="user-menu-wrap">
-        <button class="user-menu-btn" onclick="toggleUserMenu()">
+        <button class="user-menu-btn" onclick="toggleUserMenu()" aria-haspopup="true" aria-expanded="false">
           <div class="user-avatar" id="user-avatar">?</div>
           <span id="user-display-name">…</span>
           <svg viewBox="0 0 16 16" fill="currentColor" width="10" height="10"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
@@ -214,37 +217,37 @@
     <!-- ════════ PAINEL ════════ -->
     <section class="page active" id="page-dashboard">
       <div class="stats-row">
-        <div class="stat-card accent">
+        <button type="button" class="stat-card accent clickable" onclick="openChamadosFiltrados({ status: 'Aberto' })">
           <div class="stat-label">Total Abertos</div>
           <div class="stat-value" id="stat-abertos">–</div>
-          <div class="stat-sub">Aguardando atendimento</div>
-        </div>
-        <div class="stat-card warning">
+          <div class="stat-sub">Aguardando atendimento <span class="stat-go" aria-hidden="true">→</span></div>
+        </button>
+        <button type="button" class="stat-card warning clickable" onclick="openChamadosFiltrados({ status: 'andamento' })">
           <div class="stat-label">Em Andamento</div>
           <div class="stat-value" id="stat-andamento">–</div>
-          <div class="stat-sub">Sendo tratados</div>
-        </div>
-        <div class="stat-card danger">
+          <div class="stat-sub">Sendo tratados <span class="stat-go" aria-hidden="true">→</span></div>
+        </button>
+        <button type="button" class="stat-card danger clickable" onclick="openChamadosFiltrados({ status: 'ativos', prioridade: 'Urgente' })">
           <div class="stat-label">Urgentes</div>
           <div class="stat-value" id="stat-urgentes">–</div>
-          <div class="stat-sub">Prioridade máxima</div>
-        </div>
-        <div class="stat-card success">
+          <div class="stat-sub">Prioridade máxima <span class="stat-go" aria-hidden="true">→</span></div>
+        </button>
+        <button type="button" class="stat-card success clickable" onclick="openChamadosFiltrados({ status: 'concluidos', periodo: '30' })">
           <div class="stat-label">Resolvidos (30d)</div>
           <div class="stat-value" id="stat-fechados">–</div>
-          <div class="stat-sub">Nos últimos 30 dias</div>
-        </div>
+          <div class="stat-sub">Nos últimos 30 dias <span class="stat-go" aria-hidden="true">→</span></div>
+        </button>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="dash-grid">
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div class="dash-grid">
+        <div class="card card-stack">
           <div class="section-header">
             <span class="section-title">Chamados Recentes</span>
             <button class="btn btn-ghost btn-sm" onclick="navigate('chamados')">Ver todos</button>
           </div>
           <div id="recentes-list"><div class="loading-row"><div class="spinner"></div> Carregando…</div></div>
         </div>
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div class="card card-stack">
           <div class="section-header"><span class="section-title">Por Categoria</span></div>
           <div id="cat-chart"></div>
         </div>
@@ -276,6 +279,9 @@
         <input class="filter-input" type="search" id="f-busca" placeholder="Buscar por assunto, solicitante, loja…" oninput="renderChamadosTable(getSortedFiltered())">
         <select class="filter-select" id="f-status" onchange="renderChamadosTable(getSortedFiltered())">
           <option value="">Todos os status</option>
+          <option value="ativos">Todos os ativos</option>
+          <option value="andamento">Em andamento + aguardando</option>
+          <option value="concluidos">Resolvidos + fechados</option>
           <option>Aberto</option><option>Em Andamento</option>
           <option>Aguardando usuário</option><option>Resolvido</option>
           <option>Fechado</option><option>Cancelado</option>
@@ -305,13 +311,13 @@
         <table>
           <thead>
             <tr>
-              <th class="sortable" onclick="sortBy('id')">#</th>
-              <th class="sortable" onclick="sortBy('assunto')">Assunto / Categoria</th>
-              <th class="sortable" id="th-solicitante" onclick="sortBy('nome')">Solicitante</th>
-              <th class="sortable" onclick="sortBy('loja')">Loja</th>
-              <th class="sortable" onclick="sortBy('prioridade')">Prioridade</th>
-              <th class="sortable" onclick="sortBy('status')">Status</th>
-              <th class="sortable" onclick="sortBy('criado_em')">Aberto em</th>
+              <th class="sortable" data-sort="id" onclick="sortBy('id')">#</th>
+              <th class="sortable" data-sort="assunto" onclick="sortBy('assunto')">Assunto / Categoria</th>
+              <th class="sortable" id="th-solicitante" data-sort="nome" onclick="sortBy('nome')">Solicitante</th>
+              <th class="sortable" data-sort="loja" onclick="sortBy('loja')">Loja</th>
+              <th class="sortable" data-sort="prioridade" onclick="sortBy('prioridade')">Prioridade</th>
+              <th class="sortable" data-sort="status" onclick="sortBy('status')">Status</th>
+              <th class="sortable" data-sort="criado_em" onclick="sortBy('criado_em')">Aberto em</th>
               <th></th>
             </tr>
           </thead>
@@ -531,35 +537,35 @@
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="dash-grid">
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+      <div class="dash-grid">
+        <div class="card">
           <div class="section-header" style="margin-bottom:12px"><span class="section-title">Por Categoria</span>
             <span style="font-size:12px;color:var(--fg3)">Top: <strong id="rel-cat">–</strong></span>
           </div>
           <div id="rel-cat-bars"></div>
         </div>
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+        <div class="card">
           <div class="section-header" style="margin-bottom:12px"><span class="section-title">Por Loja</span>
             <span style="font-size:12px;color:var(--fg3)">Top: <strong id="rel-loja">–</strong></span>
           </div>
           <div id="rel-loja-bars"></div>
         </div>
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+        <div class="card">
           <div class="section-header" style="margin-bottom:12px"><span class="section-title">Por Prioridade</span></div>
           <div id="rel-prio-bars"></div>
         </div>
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+        <div class="card">
           <div class="section-header" style="margin-bottom:12px"><span class="section-title">Por Status</span></div>
           <div id="rel-status-bars"></div>
         </div>
       </div>
 
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+      <div class="card">
         <div class="section-header" style="margin-bottom:12px"><span class="section-title">Tendência Mensal</span></div>
         <div id="rel-mes-bars"></div>
       </div>
 
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+      <div class="card">
         <div class="section-header" style="margin-bottom:12px">
           <span class="section-title">Recorrências por Categoria + Loja</span>
         </div>

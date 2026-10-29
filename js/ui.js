@@ -9,8 +9,19 @@ function toast(msg, type = 'ok') {
   const el = document.createElement('div');
   el.className  = `toast ${type}`;
   el.textContent = msg;
+  el.setAttribute('role', type === 'err' ? 'alert' : 'status');
+  el.title = 'Clique para fechar';
   c.appendChild(el);
-  setTimeout(() => el.remove(), 3500);
+
+  // Sai com animação; clicar fecha antes do tempo
+  const dismiss = () => {
+    if (el.classList.contains('hide')) return;
+    el.classList.add('hide');
+    el.addEventListener('animationend', () => el.remove(), { once: true });
+    setTimeout(() => el.remove(), 400);
+  };
+  el.addEventListener('click', dismiss);
+  setTimeout(dismiss, type === 'err' ? 5000 : 3500);
 }
 
 // ── Janelas modais ──
@@ -22,6 +33,37 @@ document.addEventListener('click', ev => {
   if (ev.target.classList.contains('modal-overlay')) {
     ev.target.classList.remove('open');
   }
+});
+
+// Fecha a janela aberta (ou o menu do usuário) com a tecla Esc
+document.addEventListener('keydown', ev => {
+  if (ev.key !== 'Escape') return;
+  const open = [...document.querySelectorAll('.modal-overlay.open')].pop();
+  if (open) { open.classList.remove('open'); return; }
+  if (document.getElementById('user-dropdown')?.classList.contains('open')) toggleUserMenu(false);
+});
+
+// ── Reação ao clique: onda que parte do ponto tocado ──
+const RIPPLE_TARGETS = '.btn, .nav-item, .login-tab, .user-dropdown-item, .theme-toggle, .stat-card.clickable, .modal-close';
+document.addEventListener('pointerdown', ev => {
+  const el = ev.target.closest(RIPPLE_TARGETS);
+  if (!el || el.disabled || ev.button !== 0) return;
+  const rect = el.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height) * 2;
+  const wave = document.createElement('span');
+  wave.className = 'ripple';
+  wave.style.cssText = `width:${size}px;height:${size}px;left:${ev.clientX - rect.left - size / 2}px;top:${ev.clientY - rect.top - size / 2}px`;
+  el.appendChild(wave);
+  wave.addEventListener('animationend', () => wave.remove(), { once: true });
+});
+
+// Linhas e itens clicáveis também abrem pelo teclado (Enter ou espaço)
+document.addEventListener('keydown', ev => {
+  if (ev.key !== 'Enter' && ev.key !== ' ') return;
+  const el = ev.target.closest?.('[data-open-id]');
+  if (!el || ev.target !== el) return;
+  ev.preventDefault();
+  openDetalhe(el.dataset.openId);
 });
 
 // ── Barra lateral ──
@@ -36,9 +78,11 @@ function closeSidebar() {
 }
 
 // ── Navegação ──
+const ADMIN_PAGES = ['equipamentos', 'internet', 'relatorios', 'usuarios'];
+
 function navigate(page) {
-  if (page === 'internet' && currentProfile?.role !== 'admin') {
-    toast('Apenas administradores podem acessar os dados de internet.', 'err');
+  if (ADMIN_PAGES.includes(page) && currentProfile?.role !== 'admin') {
+    toast('Esta área é restrita a administradores.', 'err');
     return;
   }
 
@@ -70,6 +114,7 @@ function toggleTheme() {
   const next = cur === 'light' ? 'dark' : cur === 'dark' ? '' : 'light';
   next ? (r.dataset.theme = next) : delete r.dataset.theme;
   try { localStorage.setItem('ti-theme', next); } catch (e) {}
+  toast(`Tema: ${next === 'light' ? 'claro' : next === 'dark' ? 'escuro' : 'automático (sistema)'}`, 'info');
 }
 
 // Restaura tema salvo
@@ -107,13 +152,13 @@ function statusBadge(s) {
     'Aguardando usuário': 'badge-andamento',
     'Resolvido':          'badge-fechado',
     'Fechado':            'badge-fechado',
-    'Cancelado':          '',
+    'Cancelado':          'badge-cancelado',
   };
-  return `<span class="badge ${map[s] || ''}">${s}</span>`;
+  return `<span class="badge ${map[s] || ''}">${esc(s)}</span>`;
 }
 function prioBadge(p) {
   const map = { 'Urgente':'badge-urgente','Alta':'badge-alta','Média':'badge-media','Baixa':'badge-baixa' };
-  return `<span class="badge ${map[p] || ''}">${p}</span>`;
+  return `<span class="badge ${map[p] || ''}">${esc(p)}</span>`;
 }
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -133,7 +178,8 @@ function initUI() {
   // Restaura página
   try {
     const saved = localStorage.getItem('ti-page');
-    const valid = Object.keys(PAGE_TITLES);
+    const valid = Object.keys(PAGE_TITLES)
+      .filter(p => currentProfile?.role === 'admin' || !ADMIN_PAGES.includes(p));
     if (saved && valid.includes(saved)) {
       navigate(saved);
     } else {

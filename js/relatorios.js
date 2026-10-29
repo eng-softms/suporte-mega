@@ -57,7 +57,9 @@ function renderRelatorios() {
     prioC[c.prioridade] = (prioC[c.prioridade] || 0) + 1;
     statusC[c.status]   = (statusC[c.status]   || 0) + 1;
     if (c.criadoEm) {
-      const mes = new Date(c.criadoEm).toLocaleDateString('pt-BR', { month:'short', year:'2-digit' });
+      // Chave AAAA-MM para ordenar em ordem cronológica
+      const d   = new Date(c.criadoEm);
+      const mes = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       mesC[mes] = (mesC[mes] || 0) + 1;
     }
   });
@@ -76,7 +78,12 @@ function renderRelatorios() {
   renderBars('rel-status-bars', topStatus,           'var(--success)');
 
   // ── Tendência mensal ──
-  const mesEntries = Object.entries(mesC);
+  const mesEntries = Object.entries(mesC)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([k, n]) => {
+      const [y, m] = k.split('-').map(Number);
+      return [new Date(y, m - 1, 1).toLocaleDateString('pt-BR', { month:'short', year:'2-digit' }), n];
+    });
   renderBars('rel-mes-bars', mesEntries, 'var(--info)');
 
   // ── Recorrências ──

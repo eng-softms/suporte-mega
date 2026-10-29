@@ -25,8 +25,12 @@ async function loadEquipamentos() {
   renderEquipamentos();
 }
 
+let equipChannel = null;
+
 function subscribeEquipamentos() {
-  supa.channel('equip-realtime')
+  // Evita assinaturas duplicadas quando o usuário sai e entra de novo
+  if (equipChannel) supa.removeChannel(equipChannel);
+  equipChannel = supa.channel('equip-realtime')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'equipamentos' }, async () => {
       await loadEquipamentos();
     })
