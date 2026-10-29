@@ -36,6 +36,12 @@
   --fx-wave-2:    #6366f1;
   --fx-wave-op:   .55;
   --fx-dots:      rgba(140, 190, 255, .10);
+  --logo-t1:      #ffffff;
+  --logo-t2:      #22d3ee;
+  --logo-stroke:  #0b1d44;
+  --logo-b1:      #3b6fe0;
+  --logo-b2:      #6366f1;
+  --logo-glow:    rgba(34, 211, 238, .35);
   --font:      'Inter', system-ui, sans-serif;
   --display:   'Exo 2', 'Inter', system-ui, sans-serif;
   --digits:    'Orbitron', 'Exo 2', system-ui, sans-serif;
@@ -77,6 +83,12 @@
     --fx-wave-2:    #4f46e5;
     --fx-wave-op:   .38;
     --fx-dots:      rgba(37, 70, 160, .10);
+    --logo-t1:      #0f1b33;
+    --logo-t2:      #2563eb;
+    --logo-stroke:  #ffffff;
+    --logo-b1:      #1d4fd0;
+    --logo-b2:      #4f46e5;
+    --logo-glow:    rgba(37, 99, 235, .22);
     --shadow:    0 1px 2px rgba(20,40,90,.06), 0 6px 20px rgba(20,40,90,.09);
     --shadow-lg: 0 10px 30px rgba(20,40,90,.16);
     color-scheme: light;
@@ -107,6 +119,12 @@
   --fx-wave-2:    #4f46e5;
   --fx-wave-op:   .38;
   --fx-dots:      rgba(37, 70, 160, .10);
+  --logo-t1:      #0f1b33;
+  --logo-t2:      #2563eb;
+  --logo-stroke:  #ffffff;
+  --logo-b1:      #1d4fd0;
+  --logo-b2:      #4f46e5;
+  --logo-glow:    rgba(37, 99, 235, .22);
   --shadow:    0 1px 2px rgba(20,40,90,.06), 0 6px 20px rgba(20,40,90,.09);
   --shadow-lg: 0 10px 30px rgba(20,40,90,.16);
   color-scheme: light;
@@ -137,6 +155,12 @@
   --fx-wave-2:    #6366f1;
   --fx-wave-op:   .55;
   --fx-dots:      rgba(140, 190, 255, .10);
+  --logo-t1:      #ffffff;
+  --logo-t2:      #22d3ee;
+  --logo-stroke:  #0b1d44;
+  --logo-b1:      #3b6fe0;
+  --logo-b2:      #6366f1;
+  --logo-glow:    rgba(34, 211, 238, .35);
   --shadow:    0 1px 2px rgba(0,0,0,.35), 0 6px 22px rgba(0,8,30,.35);
   --shadow-lg: 0 10px 34px rgba(0,8,30,.55);
   color-scheme: dark;
@@ -245,6 +269,29 @@ body {
   text-shadow: 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 .sidebar-logo .sub   { font-size: 11px; color: var(--fg3); margin-top: 2px; }
+
+/* ── Logo Mega Feirão (SVG que acompanha o tema) ── */
+.mega-logo {
+  display: block; width: 100%; height: auto; overflow: visible;
+  filter: drop-shadow(0 0 10px var(--logo-glow));
+}
+.mega-logo-main {
+  font-family: 'Barlow', 'Arial Black', sans-serif; font-style: italic; font-weight: 900;
+  font-size: 38px;
+  stroke: var(--logo-stroke); stroke-width: 4; stroke-linejoin: round; paint-order: stroke;
+}
+.mega-logo-sub {
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700;
+  font-size: 18px; fill: #ffffff; text-anchor: middle;
+}
+.mega-logo-band { stroke: var(--logo-stroke); stroke-width: 1.5; stroke-linejoin: round; }
+.sidebar-logo .mega-logo { margin-bottom: 4px; }
+.sidebar-logo .sub,
+.login-logo .sub {
+  font-family: var(--mono); text-transform: uppercase; letter-spacing: .28em;
+  color: var(--neon); text-align: center;
+}
+.login-logo .mega-logo { max-width: 300px; margin: 0 auto 6px; }
 
 .nav-section { padding: 12px 8px 4px; }
 .nav-label {

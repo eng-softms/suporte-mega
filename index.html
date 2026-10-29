@@ -8,7 +8,7 @@
 
   <!-- Fontes -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@1,900&family=Barlow+Condensed:wght@700&family=Exo+2:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@500;700&display=swap">
 
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#050b18">
@@ -32,8 +32,22 @@
   <div class="login-box">
 
     <div class="login-logo">
-      <div class="brand"> Suporte TI</div>
-      <div class="sub">Mega Feirão dos Calçados</div>
+      <svg class="mega-logo" viewBox="0 0 220 70" role="img" aria-label="Mega Feirão dos Calçados">
+        <defs>
+          <linearGradient id="mlg-text-login" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" style="stop-color:var(--logo-t1)"/>
+            <stop offset="1" style="stop-color:var(--logo-t2)"/>
+          </linearGradient>
+          <linearGradient id="mlg-band-login" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" style="stop-color:var(--logo-b1)"/>
+            <stop offset="1" style="stop-color:var(--logo-b2)"/>
+          </linearGradient>
+        </defs>
+        <polygon class="mega-logo-band" points="34,44 218,41 210,66 26,68" fill="url(#mlg-band-login)"/>
+        <text class="mega-logo-main" x="4" y="38" textLength="212" lengthAdjust="spacingAndGlyphs" fill="url(#mlg-text-login)">Mega Feirão</text>
+        <text class="mega-logo-sub" x="120" y="61" textLength="148" lengthAdjust="spacingAndGlyphs">DOS CALÇADOS</text>
+      </svg>
+      <div class="sub">Suporte TI</div>
     </div>
 
     <!-- Abas -->
@@ -120,8 +134,22 @@
   <!-- ── Barra lateral ── -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <div class="brand">🖥 Suporte TI</div>
-      <div class="sub">Mega Feirão dos Calçados</div>
+      <svg class="mega-logo" viewBox="0 0 220 70" role="img" aria-label="Mega Feirão dos Calçados">
+        <defs>
+          <linearGradient id="mlg-text-side" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" style="stop-color:var(--logo-t1)"/>
+            <stop offset="1" style="stop-color:var(--logo-t2)"/>
+          </linearGradient>
+          <linearGradient id="mlg-band-side" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" style="stop-color:var(--logo-b1)"/>
+            <stop offset="1" style="stop-color:var(--logo-b2)"/>
+          </linearGradient>
+        </defs>
+        <polygon class="mega-logo-band" points="34,44 218,41 210,66 26,68" fill="url(#mlg-band-side)"/>
+        <text class="mega-logo-main" x="4" y="38" textLength="212" lengthAdjust="spacingAndGlyphs" fill="url(#mlg-text-side)">Mega Feirão</text>
+        <text class="mega-logo-sub" x="120" y="61" textLength="148" lengthAdjust="spacingAndGlyphs">DOS CALÇADOS</text>
+      </svg>
+      <div class="sub">Suporte TI</div>
     </div>
 
     <div class="nav-section">
