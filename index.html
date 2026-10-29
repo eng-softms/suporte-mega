@@ -138,6 +138,10 @@
         <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 3h14v8H1V3zm1 1v6h12V4H2zm2 1h8v1H4V5zm0 2h5v1H4V7zm8 5v1H4v-1h8z"/></svg>
         Equipamentos
       </button>
+      <button class="nav-item" data-page="internet" onclick="navigate('internet')">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a9 9 0 0 0-6 2.3l1 1A7.5 7.5 0 0 1 8 3.8a7.5 7.5 0 0 1 5 1.5l1-1A9 9 0 0 0 8 2zm0 3a6 6 0 0 0-4 1.5l1 1A4.5 4.5 0 0 1 8 6.3a4.5 4.5 0 0 1 3 1.2l1-1A6 6 0 0 0 8 5zm0 3a3 3 0 0 0-2 0.8l2 2 2-2A3 3 0 0 0 8 8zM7 12l1 2 1-2H7z"/></svg>
+        Internet das Lojas
+      </button>
       <button class="nav-item" data-page="relatorios" onclick="navigate('relatorios')">
         <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 2h10v12H3V2zm1 1v10h8V3H4zm1 2h6v1H5V5zm0 2h6v1H5V7zm0 2h4v1H5V9z"/></svg>
         Relatórios
@@ -444,6 +448,48 @@
       </div>
     </section>
 
+    <!-- ════════ INTERNET DAS LOJAS (administrador) ════════ -->
+    <section class="page" id="page-internet">
+      <div class="section-header">
+        <span class="section-title">Planos de Internet das Lojas</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="internet-count" style="font-size:12px;color:var(--fg3)"></span>
+          <button class="btn btn-primary" onclick="openNovoPlanoInternet()">
+            <span aria-hidden="true">+</span> Novo cadastro
+          </button>
+        </div>
+      </div>
+
+      <div class="filters-bar">
+        <input class="filter-input" type="search" id="internet-busca" placeholder="Buscar unidade, fornecedor, plano, IP…" oninput="renderPlanosInternet()">
+        <select class="filter-select" id="internet-unidade" onchange="renderPlanosInternet()">
+          <option value="">Todas as unidades</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Unidade</th>
+              <th>Fornecedor</th>
+              <th>Plano</th>
+              <th>Titular</th>
+              <th>Mensalidade</th>
+              <th>Links</th>
+              <th>Observações</th>
+              <th>Uso</th>
+              <th>IP</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="internet-table-body">
+            <tr><td colspan="10" style="text-align:center;padding:32px;color:var(--fg3)">Carregue esta aba para consultar os cadastros.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- ════════ RELATÓRIOS (administrador) ════════ -->
     <section class="page" id="page-relatorios">
       <div class="section-header">
@@ -674,6 +720,70 @@
   </div>
 </div>
 
+<!-- Janela modal: novo / editar plano de internet -->
+<div class="modal-overlay" id="modal-internet">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-header">
+      <span class="modal-title" id="internet-modal-title">Novo cadastro de internet</span>
+      <button class="modal-close" onclick="closeModal('modal-internet')">✕ Fechar</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-internet" onsubmit="submitPlanoInternet(event)" style="display:flex;flex-direction:column;gap:14px">
+        <input type="hidden" id="internet-id">
+        <div class="field-row">
+          <div class="field">
+            <label for="internet-form-unidade">Unidade *</label>
+            <input id="internet-form-unidade" type="text" list="internet-unidades" required maxlength="100" placeholder="Ex.: LOJA 1">
+            <datalist id="internet-unidades"></datalist>
+          </div>
+          <div class="field">
+            <label for="internet-form-fornecedor">Fornecedor *</label>
+            <input id="internet-form-fornecedor" type="text" required maxlength="160" placeholder="Nome do provedor">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="internet-form-plano">Plano</label>
+            <input id="internet-form-plano" type="text" maxlength="160" placeholder="Ex.: Plano 500 MB">
+          </div>
+          <div class="field">
+            <label for="internet-form-titular">Titular / documento</label>
+            <input id="internet-form-titular" type="text" maxlength="100">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="internet-form-valor">Valor mensal (R$)</label>
+            <input id="internet-form-valor" type="number" min="0" step="0.01" placeholder="0,00">
+          </div>
+          <div class="field">
+            <label for="internet-form-links">Quantidade / tipo de links</label>
+            <input id="internet-form-links" type="text" maxlength="160" placeholder="Ex.: possui link dedicado">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="internet-form-uso">Uso</label>
+            <input id="internet-form-uso" type="text" maxlength="160" placeholder="Ex.: Wi-Fi da loja">
+          </div>
+          <div class="field">
+            <label for="internet-form-ip">IP</label>
+            <input id="internet-form-ip" type="text" maxlength="100" placeholder="Ex.: 192.168.1.1">
+          </div>
+        </div>
+        <div class="field">
+          <label for="internet-form-observacoes">Observações</label>
+          <textarea id="internet-form-observacoes" rows="3" maxlength="1000"></textarea>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button type="submit" class="btn btn-primary" id="btn-save-internet">Salvar cadastro</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-internet')">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════════════════════════════════
      TOAST CONTAINER
      ════════════════════════════════════════ -->
@@ -691,6 +801,7 @@
 <script src="js/auth.js"></script>
 <script src="js/chamados.js"></script>
 <script src="js/equipamentos.js"></script>
+<script src="js/internet.js"></script>
 <script src="js/relatorios.js"></script>
 <script src="js/app.js"></script>
 

@@ -40,6 +40,7 @@ const PAGE_TITLES = {
   chamados:    'Chamados',
   novo:        'Novo Chamado',
   equipamentos:'Equipamentos',
+  internet:    'Internet das Lojas',
   relatorios:  'Relatórios',
   usuarios:    'Gerenciar Usuários',
 };

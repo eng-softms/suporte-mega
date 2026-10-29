@@ -37,6 +37,11 @@ function closeSidebar() {
 
 // ── Navegação ──
 function navigate(page) {
+  if (page === 'internet' && currentProfile?.role !== 'admin') {
+    toast('Apenas administradores podem acessar os dados de internet.', 'err');
+    return;
+  }
+
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
@@ -53,6 +58,7 @@ function navigate(page) {
   if (page === 'chamados')     populateLojaFilter();
   if (page === 'equipamentos') populateLojaFilterEquip();
   if (page === 'usuarios')     loadUsuarios();
+  if (page === 'internet')     loadPlanosInternet();
 
   try { localStorage.setItem('ti-page', page); } catch (e) {}
 }
