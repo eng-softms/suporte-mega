@@ -40,6 +40,7 @@ function showForgotPassword() {
 function showPasswordRecoveryForm() {
   const enteringRecovery = !isPasswordRecovery;
   isPasswordRecovery = true;
+  document.documentElement.classList.remove('booting');
   document.getElementById('login-screen').style.display = '';
   document.getElementById('app-root').style.display = 'none';
   document.querySelector('.login-tabs').style.display = 'none';
@@ -294,13 +295,22 @@ function updateUserMenuUI() {
 // ─────────────────────────────────────────
 // Mostrar ou ocultar o aplicativo
 // ─────────────────────────────────────────
+// Usuário para o qual o app já foi iniciado: o Supabase repete o evento de login
+// (ao abrir a página e ao voltar para a aba) e não queremos recarregar tudo a cada vez.
+let appStartedFor = null;
+
 function showApp() {
+  document.documentElement.classList.remove('booting');
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-root').style.display     = '';
+  if (appStartedFor === currentUser?.id) return;
+  appStartedFor = currentUser?.id;
   initDb();
 }
 
 function hideApp() {
+  document.documentElement.classList.remove('booting');
+  appStartedFor = null;
   document.getElementById('login-screen').style.display = '';
   document.getElementById('app-root').style.display     = 'none';
   allChamados    = [];

@@ -666,6 +666,17 @@ select { cursor: pointer; }
 }
 .loading-indicator { display: flex; align-items: center; gap: 8px; }
 
+/* ── Carregamento inicial (antes de saber se há sessão) ── */
+.boot-screen {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  color: var(--fg3); font-family: var(--mono); font-size: 12px;
+  letter-spacing: .2em; text-transform: uppercase;
+}
+.booting .boot-screen { display: flex; }
+.booting #login-screen,
+.booting #app-root { display: none !important; }
+
 /* ── Tela de acesso ── */
 .login-screen {
   position: fixed; inset: 0; z-index: 999;
