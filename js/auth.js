@@ -4,6 +4,7 @@
 
 let currentUser    = null;   // Objeto do usuário autenticado no Supabase
 let currentProfile = null;   // Perfil: id, nome de exibição, função e e-mail
+let isPasswordRecovery = false;
 
 // ─────────────────────────────────────────
 // Tela de acesso
@@ -36,6 +37,8 @@ function showForgotPassword() {
 }
 
 function showPasswordRecoveryForm() {
+  const enteringRecovery = !isPasswordRecovery;
+  isPasswordRecovery = true;
   document.getElementById('login-screen').style.display = '';
   document.getElementById('app-root').style.display = 'none';
   document.querySelector('.login-tabs').style.display = 'none';
@@ -43,9 +46,11 @@ function showPasswordRecoveryForm() {
   document.getElementById('form-register').style.display = 'none';
   document.getElementById('form-forgot-password').style.display = 'none';
   document.getElementById('form-reset-password').style.display = 'flex';
-  document.getElementById('p-senha').value = '';
-  document.getElementById('p-senha-confirm').value = '';
-  setLoginErr('p', '');
+  if (enteringRecovery) {
+    document.getElementById('p-senha').value = '';
+    document.getElementById('p-senha-confirm').value = '';
+    setLoginErr('p', '');
+  }
 }
 
 function setLoginErr(form, msg) {
@@ -107,13 +112,24 @@ async function updateRecoveredPassword() {
   try {
     const { error } = await supa.auth.updateUser({ password });
     if (error) throw error;
-    toast('Senha atualizada com sucesso!', 'ok');
   } catch (e) {
     setLoginErr('p', 'Não foi possível atualizar a senha: ' + e.message);
-  } finally {
     btn.disabled = false;
     btn.textContent = 'Salvar nova senha';
+    return;
   }
+
+  isPasswordRecovery = false;
+  showLoginTab('login');
+  try {
+    const { error } = await supa.auth.signOut();
+    if (error) throw error;
+  } catch (e) {
+    console.error('Senha atualizada, mas não foi possível encerrar a sessão de recuperação:', e);
+  }
+  toast('Senha atualizada com sucesso!', 'ok');
+  btn.disabled = false;
+  btn.textContent = 'Salvar nova senha';
 }
 
 // ── Acesso à conta ──
@@ -198,9 +214,15 @@ function initAuth() {
       return;
     }
 
+    if (isPasswordRecovery) {
+      showPasswordRecoveryForm();
+      return;
+    }
+
     if (session?.user) {
       currentUser = session.user;
       await loadProfile();
+      if (isPasswordRecovery) return;
       showApp();
     } else {
       currentUser    = null;
