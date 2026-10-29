@@ -379,8 +379,10 @@
 
         <div class="field">
           <label for="c-imagem">Anexar imagens (opcional, até 5; 2 MB cada)</label>
-          <input id="c-imagem" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2);color:var(--fg)">
-          <small style="color:var(--fg3)">Você pode selecionar várias de uma vez ou adicioná-las em seleções separadas.</small>
+          <input id="c-imagem" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
+          <button type="button" class="btn btn-ghost" id="btn-add-imagem" onclick="document.getElementById('c-imagem').click()">
+            <span aria-hidden="true">+</span> Adicionar imagem
+          </button>
           <div id="c-imagem-preview" aria-live="polite" style="display:none;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
         </div>
 

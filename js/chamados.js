@@ -68,7 +68,8 @@ function formatDescricaoHtml(value = '', imageUrls = []) {
 function bindImagePreview() {
   const input = document.getElementById('c-imagem');
   const previewWrap = document.getElementById('c-imagem-preview');
-  if (!input || !previewWrap) return;
+  const addButton = document.getElementById('btn-add-imagem');
+  if (!input || !previewWrap || !addButton) return;
 
   const maxImages = 5;
   const maxImageSize = 2 * 1024 * 1024;
@@ -110,39 +111,41 @@ function bindImagePreview() {
       previewWrap.appendChild(item);
     });
 
+    if (selectedImageFiles.length) {
+      const count = document.createElement('span');
+      count.textContent = `${selectedImageFiles.length} de ${maxImages} imagens selecionadas`;
+      count.style.cssText = 'align-self:center;color:var(--fg3);font-size:12px';
+      previewWrap.appendChild(count);
+    }
+
     previewWrap.style.display = selectedImageFiles.length ? 'flex' : 'none';
+    addButton.disabled = selectedImageFiles.length >= maxImages;
+    addButton.innerHTML = selectedImageFiles.length >= maxImages
+      ? '<span aria-hidden="true">+</span> Limite de imagens atingido'
+      : '<span aria-hidden="true">+</span> Adicionar imagem';
   };
 
   input.onchange = () => {
     const files = Array.from(input.files || []);
+    input.value = '';
     if (!files.length) return;
 
-    if (selectedImageFiles.length + files.length > maxImages) {
-      toast(`Selecione no máximo ${maxImages} imagens.`, 'err');
-      input.value = '';
+    const file = files[0];
+    if (selectedImageFiles.length >= maxImages) {
+      toast(`Você pode anexar no máximo ${maxImages} imagens.`, 'err');
       return;
     }
 
-    const invalidFile = files.find(file => !allowedTypes.has(file.type) || file.size > maxImageSize);
-    if (invalidFile) {
-      toast(!allowedTypes.has(invalidFile.type)
-        ? 'Use imagens JPG, PNG, GIF ou WebP.'
-        : 'Cada imagem deve ter até 2 MB.', 'err');
-      input.value = '';
+    if (!allowedTypes.has(file.type)) {
+      toast('Use imagens JPG, PNG, GIF ou WebP.', 'err');
+      return;
+    }
+    if (file.size > maxImageSize) {
+      toast('Cada imagem deve ter até 2 MB.', 'err');
       return;
     }
 
-    const existingFiles = new Set(selectedImageFiles.map(file =>
-      `${file.name}:${file.size}:${file.lastModified}`
-    ));
-    files.forEach(file => {
-      const key = `${file.name}:${file.size}:${file.lastModified}`;
-      if (!existingFiles.has(key)) {
-        selectedImageFiles.push(file);
-        existingFiles.add(key);
-      }
-    });
-    input.value = '';
+    selectedImageFiles.push(file);
     renderPreviews();
   };
 
@@ -150,6 +153,8 @@ function bindImagePreview() {
     input.form.addEventListener('reset', () => {
       selectedImageFiles = [];
       clearPreviews();
+      addButton.disabled = false;
+      addButton.innerHTML = '<span aria-hidden="true">+</span> Adicionar imagem';
     });
     input.form.dataset.imageResetBound = '1';
   }
