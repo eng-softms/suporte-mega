@@ -6,6 +6,7 @@ let allChamados = [];
 let sortField   = 'criado_em';
 let sortDir     = 'desc';
 let detailRequestId = 0;
+let selectedImageFiles = [];
 
 // ─────────────────────────────────────────
 // Carregamento
@@ -81,12 +82,42 @@ function bindImagePreview() {
     previewWrap.style.display = 'none';
   };
 
-  input.onchange = () => {
+  const renderPreviews = () => {
     clearPreviews();
+    selectedImageFiles.forEach((file, index) => {
+      const url = URL.createObjectURL(file);
+      previewUrls.push(url);
+
+      const item = document.createElement('div');
+      item.style.cssText = 'position:relative;display:flex;flex-direction:column;gap:4px;max-width:180px';
+
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = `Pré-visualização da imagem ${index + 1}`;
+      img.style.cssText = 'display:block;max-width:180px;max-height:180px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2)';
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'btn btn-ghost btn-sm';
+      removeButton.textContent = 'Remover';
+      removeButton.setAttribute('aria-label', `Remover imagem ${index + 1}`);
+      removeButton.addEventListener('click', () => {
+        selectedImageFiles.splice(index, 1);
+        renderPreviews();
+      });
+
+      item.append(img, removeButton);
+      previewWrap.appendChild(item);
+    });
+
+    previewWrap.style.display = selectedImageFiles.length ? 'flex' : 'none';
+  };
+
+  input.onchange = () => {
     const files = Array.from(input.files || []);
     if (!files.length) return;
 
-    if (files.length > maxImages) {
+    if (selectedImageFiles.length + files.length > maxImages) {
       toast(`Selecione no máximo ${maxImages} imagens.`, 'err');
       input.value = '';
       return;
@@ -101,24 +132,27 @@ function bindImagePreview() {
       return;
     }
 
-    files.forEach((file, index) => {
-      const url = URL.createObjectURL(file);
-      previewUrls.push(url);
-
-      const img = document.createElement('img');
-      img.src = url;
-      img.alt = `Pré-visualização da imagem ${index + 1}`;
-      img.style.cssText = 'display:block;max-width:100%;max-height:180px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2)';
-      previewWrap.appendChild(img);
+    const existingFiles = new Set(selectedImageFiles.map(file =>
+      `${file.name}:${file.size}:${file.lastModified}`
+    ));
+    files.forEach(file => {
+      const key = `${file.name}:${file.size}:${file.lastModified}`;
+      if (!existingFiles.has(key)) {
+        selectedImageFiles.push(file);
+        existingFiles.add(key);
+      }
     });
-    previewWrap.style.display = 'flex';
+    input.value = '';
+    renderPreviews();
   };
 
-  input.form?.addEventListener('reset', () => {
-    setTimeout(() => {
+  if (input.form && !input.form.dataset.imageResetBound) {
+    input.form.addEventListener('reset', () => {
+      selectedImageFiles = [];
       clearPreviews();
-    }, 0);
-  });
+    });
+    input.form.dataset.imageResetBound = '1';
+  }
 }
 
 function getStorageImagePaths(description) {
@@ -476,7 +510,7 @@ async function submitChamado(ev) {
   const assunto    = document.getElementById('c-assunto').value.trim();
   const descricao  = document.getElementById('c-descricao').value.trim();
   const inputImage = document.getElementById('c-imagem');
-  const imageFiles = Array.from(inputImage?.files || []);
+  const imageFiles = [...selectedImageFiles];
   const maxImages = 5;
   const maxImageSize = 2 * 1024 * 1024;
   const fileExtensions = {
@@ -501,7 +535,7 @@ async function submitChamado(ev) {
     return;
   }
 
-  btn.disabled = true; btn.textContent = 'Enviando…';
+  btn.disabled = true;
 
   const uploadedImagePaths = [];
   try {
@@ -510,7 +544,8 @@ async function submitChamado(ev) {
         throw new Error('Faça login novamente antes de anexar uma imagem.');
       }
 
-      for (const imageFile of imageFiles) {
+      for (const [index, imageFile] of imageFiles.entries()) {
+        btn.textContent = `Enviando imagem ${index + 1} de ${imageFiles.length}…`;
         const path = `${currentUser.id}/${crypto.randomUUID()}.${fileExtensions[imageFile.type]}`;
         const { error: uploadError } = await supa.storage
           .from('chamados-imagens')
@@ -538,6 +573,7 @@ async function submitChamado(ev) {
       atualizado_em: now,
     };
 
+    btn.textContent = 'Registrando chamado…';
     const { error } = await supa.from('chamados').insert(payload);
     if (error) throw error;
     uploadedImagePaths.length = 0;
@@ -548,6 +584,7 @@ async function submitChamado(ev) {
     if (currentProfile) document.getElementById('c-nome').value = currentProfile.display_name;
     navigate('chamados');
   } catch (e) {
+    console.error('submitChamado:', e);
     if (uploadedImagePaths.length) {
       try {
         const { error: cleanupError } = await supa.storage
@@ -560,7 +597,8 @@ async function submitChamado(ev) {
         console.error('Não foi possível remover a imagem após falha ao abrir o chamado:', cleanupError);
       }
     }
-    toast('Erro ao enviar: ' + e.message, 'err');
+    const errorMessage = e?.message || e?.details || 'Erro desconhecido.';
+    toast('Erro ao enviar: ' + errorMessage, 'err');
   } finally {
     btn.disabled = false; btn.textContent = 'Abrir Chamado';
   }
