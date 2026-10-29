@@ -46,6 +46,37 @@
       <button class="btn btn-primary" id="l-btn" onclick="doLogin()" style="width:100%;justify-content:center;padding:10px">
         Entrar
       </button>
+      <button type="button" class="login-link" onclick="showForgotPassword()">
+        Esqueci minha senha
+      </button>
+    </div>
+
+    <div id="form-forgot-password" style="display:none;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label class="form-label" for="f-email">E-mail cadastrado</label>
+        <input class="form-control" type="email" id="f-email" placeholder="seu@email.com" autocomplete="email" required>
+      </div>
+      <div class="login-err" id="f-err"></div>
+      <div class="login-note" id="f-note" aria-live="polite"></div>
+      <button type="button" class="btn btn-primary" id="f-btn" onclick="sendPasswordRecovery()" style="width:100%;justify-content:center;padding:10px">
+        Enviar link de recuperação
+      </button>
+      <button type="button" class="login-link" onclick="showLoginTab('login')">Voltar para entrar</button>
+    </div>
+
+    <div id="form-reset-password" style="display:none;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label class="form-label" for="p-senha">Nova senha</label>
+        <input class="form-control" type="password" id="p-senha" placeholder="Mínimo de 6 caracteres" autocomplete="new-password" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="p-senha-confirm">Confirme a nova senha</label>
+        <input class="form-control" type="password" id="p-senha-confirm" placeholder="Digite novamente a nova senha" autocomplete="new-password" required>
+      </div>
+      <div class="login-err" id="p-err"></div>
+      <button type="button" class="btn btn-primary" id="p-btn" onclick="updateRecoveredPassword()" style="width:100%;justify-content:center;padding:10px">
+        Salvar nova senha
+      </button>
     </div>
 
     <!-- Formulário de cadastro -->
@@ -331,10 +362,8 @@
             </select>
           </div>
           <div class="field">
-            <label for="c-equipamento">Equipamento envolvido</label>
-            <select id="c-equipamento">
-              <option value="">Nenhum / Não sei</option>
-            </select>
+            <label for="c-equipamento">Equipamento</label>
+            <input id="c-equipamento" type="text" placeholder="Ex.: computador do caixa, impressora" maxlength="120">
           </div>
         </div>
 
@@ -349,11 +378,9 @@
         </div>
 
         <div class="field">
-          <label for="c-imagem">Anexar imagem (opcional)</label>
-          <input id="c-imagem" type="file" accept="image/jpeg,image/png,image/gif,image/webp" capture="environment" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2);color:var(--fg)">
-          <div id="c-imagem-preview" style="display:none;margin-top:8px">
-            <img id="c-imagem-thumb" alt="Pré-visualização da imagem anexada" style="display:block;max-width:100%;max-height:220px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2)">
-          </div>
+          <label for="c-imagem">Anexar imagens (opcional, até 5; 2 MB cada)</label>
+          <input id="c-imagem" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2);color:var(--fg)">
+          <div id="c-imagem-preview" aria-live="polite" style="display:none;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
         </div>
 
         <div style="display:flex;gap:10px">

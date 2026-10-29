@@ -379,6 +379,11 @@ select { cursor: pointer; }
   background: none; color: var(--fg3); transition: background .15s, color .15s;
 }
 .login-tab.active { background: var(--bg2); color: var(--fg); }
+.login-link {
+  border: none; background: none; color: var(--accent);
+  font: inherit; font-size: 12.5px; cursor: pointer; text-align: center;
+}
+.login-link:hover { text-decoration: underline; }
 .login-err {
   color: var(--danger); font-size: 12.5px; text-align: center;
   background: color-mix(in srgb, var(--danger) 10%, transparent);
@@ -386,6 +391,11 @@ select { cursor: pointer; }
   display: none;
 }
 .login-err.show { display: block; }
+.login-note {
+  color: var(--fg2); font-size: 12.5px; text-align: center;
+  line-height: 1.5; display: none;
+}
+.login-note.show { display: block; }
 
 /* ── Menu do usuário na barra superior ── */
 .user-menu-wrap { position: relative; }

@@ -11,10 +11,41 @@ let currentProfile = null;   // Perfil: id, nome de exibição, função e e-mai
 function showLoginTab(tab) {
   document.getElementById('form-login').style.display    = tab === 'login'    ? '' : 'none';
   document.getElementById('form-register').style.display = tab === 'register' ? '' : 'none';
+  document.getElementById('form-forgot-password').style.display = 'none';
+  document.getElementById('form-reset-password').style.display = 'none';
+  document.querySelector('.login-tabs').style.display = '';
   document.getElementById('tab-login').classList.toggle('active',    tab === 'login');
   document.getElementById('tab-register').classList.toggle('active', tab === 'register');
   setLoginErr('l', '');
   setLoginErr('r', '');
+  setLoginErr('f', '');
+  setLoginErr('p', '');
+  document.getElementById('f-note').classList.remove('show');
+}
+
+function showForgotPassword() {
+  const email = document.getElementById('l-email').value.trim();
+  document.getElementById('f-email').value = email;
+  document.querySelector('.login-tabs').style.display = 'none';
+  document.getElementById('form-login').style.display = 'none';
+  document.getElementById('form-register').style.display = 'none';
+  document.getElementById('form-reset-password').style.display = 'none';
+  document.getElementById('form-forgot-password').style.display = 'flex';
+  setLoginErr('f', '');
+  document.getElementById('f-note').classList.remove('show');
+}
+
+function showPasswordRecoveryForm() {
+  document.getElementById('login-screen').style.display = '';
+  document.getElementById('app-root').style.display = 'none';
+  document.querySelector('.login-tabs').style.display = 'none';
+  document.getElementById('form-login').style.display = 'none';
+  document.getElementById('form-register').style.display = 'none';
+  document.getElementById('form-forgot-password').style.display = 'none';
+  document.getElementById('form-reset-password').style.display = 'flex';
+  document.getElementById('p-senha').value = '';
+  document.getElementById('p-senha-confirm').value = '';
+  setLoginErr('p', '');
 }
 
 function setLoginErr(form, msg) {
@@ -22,6 +53,67 @@ function setLoginErr(form, msg) {
   if (!el) return;
   el.textContent = msg;
   el.classList.toggle('show', !!msg);
+}
+
+async function sendPasswordRecovery() {
+  const emailInput = document.getElementById('f-email');
+  const email = emailInput.value.trim();
+  const btn = document.getElementById('f-btn');
+  const note = document.getElementById('f-note');
+  setLoginErr('f', '');
+  note.classList.remove('show');
+
+  if (!email || !emailInput.checkValidity()) {
+    emailInput.reportValidity();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando…';
+  try {
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
+    note.textContent = 'Se esse e-mail estiver cadastrado, você receberá um link para redefinir a senha.';
+    note.classList.add('show');
+  } catch (e) {
+    setLoginErr('f', 'Não foi possível enviar o e-mail: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enviar link de recuperação';
+  }
+}
+
+async function updateRecoveredPassword() {
+  const passwordInput = document.getElementById('p-senha');
+  const confirmInput = document.getElementById('p-senha-confirm');
+  const password = passwordInput.value;
+  const btn = document.getElementById('p-btn');
+  setLoginErr('p', '');
+
+  if (password.length < 6) {
+    setLoginErr('p', 'A senha deve ter ao menos 6 caracteres.');
+    passwordInput.focus();
+    return;
+  }
+  if (password !== confirmInput.value) {
+    setLoginErr('p', 'As senhas não conferem.');
+    confirmInput.focus();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Salvando…';
+  try {
+    const { error } = await supa.auth.updateUser({ password });
+    if (error) throw error;
+    toast('Senha atualizada com sucesso!', 'ok');
+  } catch (e) {
+    setLoginErr('p', 'Não foi possível atualizar a senha: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Salvar nova senha';
+  }
 }
 
 // ── Acesso à conta ──
@@ -100,6 +192,12 @@ async function doLogout() {
 // ─────────────────────────────────────────
 function initAuth() {
   supa.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY' && session?.user) {
+      currentUser = session.user;
+      showPasswordRecoveryForm();
+      return;
+    }
+
     if (session?.user) {
       currentUser = session.user;
       await loadProfile();
@@ -351,6 +449,10 @@ document.addEventListener('keydown', e => {
     && document.getElementById('login-screen')?.style.display !== 'none';
   const regVisible   = document.getElementById('form-register')?.style.display !== 'none'
     && document.getElementById('login-screen')?.style.display !== 'none';
+  const forgotVisible = document.getElementById('form-forgot-password')?.style.display !== 'none'
+    && document.getElementById('login-screen')?.style.display !== 'none';
+  const resetVisible = document.getElementById('form-reset-password')?.style.display !== 'none'
+    && document.getElementById('login-screen')?.style.display !== 'none';
 
   if (loginVisible && (
     document.activeElement === document.getElementById('l-email') ||
@@ -362,4 +464,13 @@ document.addEventListener('keydown', e => {
     document.activeElement === document.getElementById('r-email') ||
     document.activeElement === document.getElementById('r-senha')
   )) doRegister();
+
+  if (forgotVisible && document.activeElement === document.getElementById('f-email')) {
+    sendPasswordRecovery();
+  }
+
+  if (resetVisible && (
+    document.activeElement === document.getElementById('p-senha') ||
+    document.activeElement === document.getElementById('p-senha-confirm')
+  )) updateRecoveredPassword();
 });

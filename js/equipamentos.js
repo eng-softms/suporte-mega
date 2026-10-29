@@ -23,7 +23,6 @@ async function loadEquipamentos() {
     atualizadoEm: r.atualizado_em ? new Date(r.atualizado_em).getTime() : null,
   }));
   renderEquipamentos();
-  populateEquipSelect?.(); // Atualiza a lista de equipamentos no formulário de chamados, se existir.
 }
 
 function subscribeEquipamentos() {

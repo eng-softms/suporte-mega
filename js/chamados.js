@@ -47,72 +47,86 @@ function escapeHtml(value = '') {
     .replace(/'/g, '&#039;');
 }
 
-function formatDescricaoHtml(value = '', imageUrl = '') {
+function formatDescricaoHtml(value = '', imageUrls = []) {
   const raw = String(value || '').trim();
-  if (!raw) return 'Sem descrição.';
-
-  const imageMatch = raw.match(/\[imagem-storage:\s*([^\]\r\n]+)\]/);
-  const legacyImageMatch = raw.match(/data:image\/(?:jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+/i);
+  const imageMarkers = [...raw.matchAll(/\[imagem-storage:\s*([^\]\r\n]+)\]/g)];
+  const legacyImages = [...raw.matchAll(/data:image\/(?:jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+/ig)]
+    .map(match => match[0]);
   const description = raw
     .replace(/\[imagem-storage:\s*[^\]\r\n]+\]/g, '')
     .replace(/data:image\/(?:jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+/ig, '')
     .trim();
-  imageUrl = imageUrl || legacyImageMatch?.[0] || '';
   const text = escapeHtml(description || 'Sem descrição.').replace(/\n/g, '<br>');
-  const imageHtml = imageUrl
-    ? `<img src="${escapeHtml(imageUrl)}" alt="Imagem anexada ao chamado" style="display:block;max-width:100%;margin-top:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);">`
-    : '';
-  return `${text}${imageMatch || legacyImageMatch ? imageHtml : ''}`;
+  const availableImageUrls = imageUrls.length ? imageUrls : legacyImages;
+  const imageHtml = availableImageUrls.map((url, index) =>
+    `<img src="${escapeHtml(url)}" alt="Imagem ${index + 1} anexada ao chamado" style="display:block;max-width:100%;max-height:360px;margin-top:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);">`
+  ).join('');
+  return `${text}${imageMarkers.length || legacyImages.length ? imageHtml : ''}`;
 }
 
 function bindImagePreview() {
   const input = document.getElementById('c-imagem');
   const previewWrap = document.getElementById('c-imagem-preview');
-  const thumb = document.getElementById('c-imagem-thumb');
-  if (!input || !previewWrap || !thumb) return;
+  if (!input || !previewWrap) return;
+
+  const maxImages = 5;
+  const maxImageSize = 2 * 1024 * 1024;
+  const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+  let previewUrls = [];
+
+  const clearPreviews = () => {
+    previewUrls.forEach(url => URL.revokeObjectURL(url));
+    previewUrls = [];
+    previewWrap.replaceChildren();
+    previewWrap.style.display = 'none';
+  };
 
   input.onchange = () => {
-    const file = input.files && input.files[0];
-    if (!file) {
-      previewWrap.style.display = 'none';
-      thumb.src = '';
+    clearPreviews();
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+
+    if (files.length > maxImages) {
+      toast(`Selecione no máximo ${maxImages} imagens.`, 'err');
+      input.value = '';
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
-      toast('Selecione apenas imagens.', 'err');
+    const invalidFile = files.find(file => !allowedTypes.has(file.type) || file.size > maxImageSize);
+    if (invalidFile) {
+      toast(!allowedTypes.has(invalidFile.type)
+        ? 'Use imagens JPG, PNG, GIF ou WebP.'
+        : 'Cada imagem deve ter até 2 MB.', 'err');
       input.value = '';
-      previewWrap.style.display = 'none';
-      thumb.src = '';
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      thumb.src = reader.result;
-      previewWrap.style.display = 'block';
-    };
-    reader.onerror = () => {
-      toast('Não foi possível carregar a pré-visualização da imagem.', 'err');
-      input.value = '';
-      previewWrap.style.display = 'none';
-      thumb.src = '';
-    };
-    reader.readAsDataURL(file);
+    files.forEach((file, index) => {
+      const url = URL.createObjectURL(file);
+      previewUrls.push(url);
+
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = `Pré-visualização da imagem ${index + 1}`;
+      img.style.cssText = 'display:block;max-width:100%;max-height:180px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2)';
+      previewWrap.appendChild(img);
+    });
+    previewWrap.style.display = 'flex';
   };
 
   input.form?.addEventListener('reset', () => {
     setTimeout(() => {
-      previewWrap.style.display = 'none';
-      thumb.src = '';
+      clearPreviews();
     }, 0);
   });
 }
 
-function getStorageImagePath(description) {
-  const match = String(description || '').match(/\[imagem-storage:\s*([^\]\r\n]+)\]/);
-  const path = match?.[1]?.trim() || '';
-  return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|gif|webp)$/i.test(path) ? path : '';
+function getStorageImagePaths(description) {
+  const matches = String(description || '').matchAll(/\[imagem-storage:\s*([^\]\r\n]+)\]/g);
+  const validPath = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|gif|webp)$/i;
+  return [...matches]
+    .map(match => match[1].trim())
+    .filter(path => validPath.test(path));
 }
 
 // ─────────────────────────────────────────
@@ -301,17 +315,17 @@ async function openDetalhe(id) {
     `<option value="${s}" ${c.status === s ? 'selected' : ''}>${s}</option>`
   ).join('');
 
-  let imageUrl = '';
-  const imagePath = getStorageImagePath(c.descricao);
-  if (imagePath) {
+  const imagePaths = getStorageImagePaths(c.descricao);
+  const imageUrls = [];
+  for (const imagePath of imagePaths) {
     try {
       const { data, error } = await supa.storage
         .from('chamados-imagens')
         .createSignedUrl(imagePath, 3600);
       if (error) throw error;
-      imageUrl = data.signedUrl;
+      imageUrls.push(data.signedUrl);
     } catch (e) {
-      toast('Não foi possível carregar a imagem: ' + e.message, 'err');
+      toast('Não foi possível carregar uma imagem: ' + e.message, 'err');
     }
   }
   if (requestId !== detailRequestId) return;
@@ -357,7 +371,7 @@ async function openDetalhe(id) {
 
     <div>
       <div class="detail-field-label" style="margin-bottom:6px">Descrição</div>
-      <div class="detail-body">${formatDescricaoHtml(c.descricao, imageUrl)}</div>
+      <div class="detail-body">${formatDescricaoHtml(c.descricao, imageUrls)}</div>
     </div>
 
     ${canEdit ? `
@@ -447,23 +461,6 @@ function initFormNovo() {
     catSel.dataset.populated = '1';
   }
 
-  // Preenche a lista de equipamentos no campo de seleção
-  populateEquipSelect();
-}
-
-function populateEquipSelect() {
-  const sel = document.getElementById('c-equipamento');
-  if (!sel) return;
-  const val = sel.value;
-  // Mantém apenas a opção vazia
-  while (sel.options.length > 1) sel.remove(1);
-  allEquipamentos.forEach(e => {
-    const o = document.createElement('option');
-    const nome = e.nome || e.serie || e.tipo;
-    o.value = nome; o.textContent = `${nome} (${e.tipo} – ${e.loja})`;
-    sel.appendChild(o);
-  });
-  sel.value = val;
 }
 
 async function submitChamado(ev) {
@@ -479,46 +476,55 @@ async function submitChamado(ev) {
   const assunto    = document.getElementById('c-assunto').value.trim();
   const descricao  = document.getElementById('c-descricao').value.trim();
   const inputImage = document.getElementById('c-imagem');
-  const imageFile = inputImage?.files?.[0] || null;
+  const imageFiles = Array.from(inputImage?.files || []);
+  const maxImages = 5;
+  const maxImageSize = 2 * 1024 * 1024;
+  const fileExtensions = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+  };
 
   if (!nome || !loja || !categoria || !assunto) {
     toast('Preencha os campos obrigatórios (*).', 'err'); return;
   }
 
+  if (imageFiles.length > maxImages) {
+    toast(`Anexe no máximo ${maxImages} imagens.`, 'err'); return;
+  }
+  const invalidFile = imageFiles.find(file => !fileExtensions[file.type] || file.size > maxImageSize);
+  if (invalidFile) {
+    toast(!fileExtensions[invalidFile.type]
+      ? 'Use imagens JPG, PNG, GIF ou WebP.'
+      : 'Cada imagem deve ter até 2 MB.', 'err');
+    return;
+  }
+
   btn.disabled = true; btn.textContent = 'Enviando…';
 
-  let uploadedImagePath = '';
+  const uploadedImagePaths = [];
   try {
-    if (imageFile) {
-      const fileExtensions = {
-        'image/jpeg': 'jpg',
-        'image/png': 'png',
-        'image/gif': 'gif',
-        'image/webp': 'webp',
-      };
-      const extension = fileExtensions[imageFile.type];
-      if (!extension) {
-        throw new Error('Use uma imagem JPG, PNG, GIF ou WebP.');
-      }
-      if (imageFile.size > 2 * 1024 * 1024) {
-        throw new Error('A imagem deve ter até 2 MB.');
-      }
+    if (imageFiles.length) {
       if (!currentUser?.id) {
         throw new Error('Faça login novamente antes de anexar uma imagem.');
       }
 
-      uploadedImagePath = `${currentUser.id}/${crypto.randomUUID()}.${extension}`;
-      const { error: uploadError } = await supa.storage
-        .from('chamados-imagens')
-        .upload(uploadedImagePath, imageFile, {
-          contentType: imageFile.type,
-          upsert: false,
-        });
-      if (uploadError) throw uploadError;
+      for (const imageFile of imageFiles) {
+        const path = `${currentUser.id}/${crypto.randomUUID()}.${fileExtensions[imageFile.type]}`;
+        const { error: uploadError } = await supa.storage
+          .from('chamados-imagens')
+          .upload(path, imageFile, {
+            contentType: imageFile.type,
+            upsert: false,
+          });
+        if (uploadError) throw uploadError;
+        uploadedImagePaths.push(path);
+      }
     }
 
-    const descricaoFinal = uploadedImagePath
-      ? `${descricao}${descricao ? '\n\n' : ''}[imagem-storage: ${uploadedImagePath}]`
+    const descricaoFinal = uploadedImagePaths.length
+      ? `${descricao}${descricao ? '\n\n' : ''}${uploadedImagePaths.map(path => `[imagem-storage: ${path}]`).join('\n')}`
       : descricao;
     const now = new Date().toISOString();
     const payload = {
@@ -534,21 +540,19 @@ async function submitChamado(ev) {
 
     const { error } = await supa.from('chamados').insert(payload);
     if (error) throw error;
-    uploadedImagePath = '';
+    uploadedImagePaths.length = 0;
     toast('Chamado aberto com sucesso!', 'ok');
     ev.target.reset();
     const previewWrap = document.getElementById('c-imagem-preview');
-    const thumb = document.getElementById('c-imagem-thumb');
     if (previewWrap) previewWrap.style.display = 'none';
-    if (thumb) thumb.src = '';
     if (currentProfile) document.getElementById('c-nome').value = currentProfile.display_name;
     navigate('chamados');
   } catch (e) {
-    if (uploadedImagePath) {
+    if (uploadedImagePaths.length) {
       try {
         const { error: cleanupError } = await supa.storage
           .from('chamados-imagens')
-          .remove([uploadedImagePath]);
+          .remove(uploadedImagePaths);
         if (cleanupError) {
           console.error('Não foi possível remover a imagem após falha ao abrir o chamado:', cleanupError);
         }
