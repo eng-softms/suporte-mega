@@ -78,7 +78,7 @@ function closeSidebar() {
 }
 
 // ── Navegação ──
-const ADMIN_PAGES = ['equipamentos', 'internet', 'relatorios', 'usuarios'];
+const ADMIN_PAGES = ['equipamentos', 'internet', 'aquisicoes', 'relatorios', 'usuarios'];
 
 function navigate(page) {
   if (ADMIN_PAGES.includes(page) && currentProfile?.role !== 'admin') {
@@ -103,6 +103,7 @@ function navigate(page) {
   if (page === 'equipamentos') populateLojaFilterEquip();
   if (page === 'usuarios')     loadUsuarios();
   if (page === 'internet')     loadPlanosInternet();
+  if (page === 'aquisicoes')   loadAquisicoes();
 
   try { localStorage.setItem('ti-page', page); } catch (e) {}
 }

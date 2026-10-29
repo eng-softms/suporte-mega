@@ -152,6 +152,10 @@
         <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a9 9 0 0 0-6 2.3l1 1A7.5 7.5 0 0 1 8 3.8a7.5 7.5 0 0 1 5 1.5l1-1A9 9 0 0 0 8 2zm0 3a6 6 0 0 0-4 1.5l1 1A4.5 4.5 0 0 1 8 6.3a4.5 4.5 0 0 1 3 1.2l1-1A6 6 0 0 0 8 5zm0 3a3 3 0 0 0-2 0.8l2 2 2-2A3 3 0 0 0 8 8zM7 12l1 2 1-2H7z"/></svg>
         Internet das Lojas
       </button>
+      <button class="nav-item" data-page="aquisicoes" onclick="navigate('aquisicoes')">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h2.2l.5 2H15l-1.6 6H4.6L2.4 3H1V2zm3.9 3 1.1 4h6.6l1-4H4.9zM6 12a1.25 1.25 0 1 1 0 2.5A1.25 1.25 0 0 1 6 12zm6 0a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5z"/></svg>
+        Aquisição de Equipamentos
+      </button>
       <button class="nav-item" data-page="relatorios" onclick="navigate('relatorios')">
         <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 2h10v12H3V2zm1 1v10h8V3H4zm1 2h6v1H5V5zm0 2h6v1H5V7zm0 2h4v1H5V9z"/></svg>
         Relatórios
@@ -503,6 +507,89 @@
       </div>
     </section>
 
+    <!-- ════════ AQUISIÇÃO DE EQUIPAMENTOS (administrador) ════════ -->
+    <section class="page" id="page-aquisicoes">
+      <div class="stats-row" style="margin-bottom:16px">
+        <button type="button" class="stat-card warning clickable" onclick="filterAquisicaoStatus('Pendente')">
+          <div class="stat-label">Pendentes</div>
+          <div class="stat-value" id="aq-stat-pendente">–</div>
+          <div class="stat-sub"><span id="aq-stat-pendente-valor">–</span> <span class="stat-go" aria-hidden="true">→</span></div>
+        </button>
+        <button type="button" class="stat-card accent clickable" onclick="filterAquisicaoStatus('Aprovado')">
+          <div class="stat-label">Aprovados</div>
+          <div class="stat-value" id="aq-stat-aprovado">–</div>
+          <div class="stat-sub"><span id="aq-stat-aprovado-valor">–</span> <span class="stat-go" aria-hidden="true">→</span></div>
+        </button>
+        <button type="button" class="stat-card success clickable" onclick="filterAquisicaoStatus('Comprado')">
+          <div class="stat-label">Comprados</div>
+          <div class="stat-value" id="aq-stat-comprado">–</div>
+          <div class="stat-sub"><span id="aq-stat-comprado-valor">–</span> <span class="stat-go" aria-hidden="true">→</span></div>
+        </button>
+        <button type="button" class="stat-card danger clickable" onclick="filterAquisicaoStatus('abertos')">
+          <div class="stat-label">A comprar (total)</div>
+          <div class="stat-value" id="aq-stat-total" style="font-size:22px">–</div>
+          <div class="stat-sub">Pendentes + aprovados <span class="stat-go" aria-hidden="true">→</span></div>
+        </button>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Aquisição de Equipamentos</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span id="aquisicao-count" style="font-size:12px;color:var(--fg3)"></span>
+          <button class="btn btn-ghost" onclick="exportAquisicoesExcel()">
+            <span aria-hidden="true">⬇</span> Exportar Excel
+          </button>
+          <button class="btn btn-primary" onclick="openNovaAquisicao()">
+            <span aria-hidden="true">+</span> Adicionar equipamento
+          </button>
+        </div>
+      </div>
+
+      <div class="filters-bar">
+        <input class="filter-input" type="search" id="aquisicao-busca" placeholder="Buscar equipamento, setor, modelo, finalidade…" oninput="renderAquisicoes()">
+        <select class="filter-select" id="aquisicao-setor" onchange="renderAquisicoes()">
+          <option value="">Todas as lojas/setores</option>
+        </select>
+        <select class="filter-select" id="aquisicao-status" onchange="renderAquisicoes()">
+          <option value="">Todos os status</option>
+          <option value="abertos">A comprar (pendente/aprovado)</option>
+          <option>Pendente</option>
+          <option>Aprovado</option>
+          <option>Comprado</option>
+          <option>Cancelado</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Equipamento</th>
+              <th>Qtd.</th>
+              <th>Loja/Setor</th>
+              <th>Marca/Modelo/Obs.</th>
+              <th>Local de compra</th>
+              <th>Valor unit.</th>
+              <th>Valor final</th>
+              <th>Finalidade da compra e uso</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="aquisicao-table-body">
+            <tr><td colspan="10" style="text-align:center;padding:32px;color:var(--fg3)">Carregue esta aba para consultar os itens.</td></tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="6" style="text-align:right;padding:12px;font-weight:700">TOTAL (itens filtrados)</td>
+              <td style="padding:12px;font-weight:700;white-space:nowrap" id="aquisicao-total">–</td>
+              <td colspan="3"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
     <!-- ════════ RELATÓRIOS (administrador) ════════ -->
     <section class="page" id="page-relatorios">
       <div class="section-header">
@@ -797,6 +884,79 @@
   </div>
 </div>
 
+<!-- Janela modal: novo / editar item de aquisição -->
+<div class="modal-overlay" id="modal-aquisicao">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-header">
+      <span class="modal-title" id="aquisicao-modal-title">Novo equipamento para aquisição</span>
+      <button class="modal-close" onclick="closeModal('modal-aquisicao')">✕ Fechar</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-aquisicao" onsubmit="submitAquisicao(event)" style="display:flex;flex-direction:column;gap:14px">
+        <input type="hidden" id="aquisicao-id">
+        <div class="field-row">
+          <div class="field">
+            <label for="aquisicao-form-equipamento">Equipamento *</label>
+            <input id="aquisicao-form-equipamento" type="text" required maxlength="160" placeholder="Ex.: Monitor">
+          </div>
+          <div class="field">
+            <label for="aquisicao-form-quantidade">Quantidade *</label>
+            <input id="aquisicao-form-quantidade" type="number" required min="1" step="1" value="1" oninput="updateAquisicaoFormTotal()">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="aquisicao-form-setor">Loja/Setor</label>
+            <input id="aquisicao-form-setor" type="text" list="aquisicao-setores" maxlength="100" placeholder="Ex.: TI, Loja 16, CD">
+            <datalist id="aquisicao-setores"></datalist>
+          </div>
+          <div class="field">
+            <label for="aquisicao-form-marca">Marca/Modelo/Observação</label>
+            <input id="aquisicao-form-marca" type="text" maxlength="200" placeholder="Ex.: Dell Latitude 5420">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="aquisicao-form-local">Local de compra</label>
+            <input id="aquisicao-form-local" type="text" list="aquisicao-locais" maxlength="160" placeholder="Ex.: Mercado Livre">
+            <datalist id="aquisicao-locais">
+              <option>Mercado Livre</option>
+              <option>Shopping China</option>
+            </datalist>
+          </div>
+          <div class="field">
+            <label for="aquisicao-form-valor">Valor unitário (R$)</label>
+            <input id="aquisicao-form-valor" type="number" min="0" step="0.01" placeholder="0,00" oninput="updateAquisicaoFormTotal()">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="aquisicao-form-status">Status</label>
+            <select id="aquisicao-form-status">
+              <option>Pendente</option>
+              <option>Aprovado</option>
+              <option>Comprado</option>
+              <option>Cancelado</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Valor final</label>
+            <div id="aquisicao-form-total" style="padding:10px 0;font-weight:700;font-size:16px">–</div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="aquisicao-form-finalidade">Finalidade da compra e uso</label>
+          <textarea id="aquisicao-form-finalidade" rows="3" maxlength="1000"></textarea>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button type="submit" class="btn btn-primary" id="btn-save-aquisicao">Salvar item</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-aquisicao')">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════════════════════════════════
      TOAST CONTAINER
      ════════════════════════════════════════ -->
@@ -815,6 +975,7 @@
 <script src="js/chamados.js"></script>
 <script src="js/equipamentos.js"></script>
 <script src="js/internet.js"></script>
+<script src="js/aquisicoes.js"></script>
 <script src="js/relatorios.js"></script>
 <script src="js/app.js"></script>
 

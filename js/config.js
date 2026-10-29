@@ -41,6 +41,7 @@ const PAGE_TITLES = {
   novo:        'Novo Chamado',
   equipamentos:'Equipamentos',
   internet:    'Internet das Lojas',
+  aquisicoes:  'Aquisição de Equipamentos',
   relatorios:  'Relatórios',
   usuarios:    'Gerenciar Usuários',
 };

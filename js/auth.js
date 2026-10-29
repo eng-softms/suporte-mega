@@ -306,6 +306,7 @@ function hideApp() {
   allChamados    = [];
   allEquipamentos = [];
   allPlanosInternet = [];
+  allAquisicoes = [];
   setLoginErr('l', '');
   setLoginErr('r', '');
 }

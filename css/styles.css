@@ -473,6 +473,7 @@ tbody tr.row-click:active { background: color-mix(in srgb, var(--accent) 12%, va
 tbody tr.row-click:focus-visible { outline: none; box-shadow: inset 3px 0 0 var(--accent), inset 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent); }
 tbody td { padding: 10px 14px; vertical-align: middle; max-width: 260px; }
 tbody td.wrap { white-space: normal; word-break: break-word; }
+tfoot tr { border-top: 2px solid var(--border); background: var(--bg3); }
 
 /* ── Selos / etiquetas ── */
 .badge {
