@@ -144,7 +144,12 @@ async function doLogin() {
   const btn = document.getElementById('l-btn');
   btn.disabled = true; btn.textContent = 'Entrando…';
 
-  const { error } = await supa.auth.signInWithPassword({ email, password: senha });
+  let error;
+  try {
+    ({ error } = await supa.auth.signInWithPassword({ email, password: senha }));
+  } catch (e) {
+    error = { message: 'Falha de conexão com o servidor. Tente novamente.' };
+  }
 
   btn.disabled = false; btn.textContent = 'Entrar';
   if (error) {
@@ -209,29 +214,35 @@ async function doLogout() {
 // Observador da sessão (dispara ao entrar ou sair)
 // ─────────────────────────────────────────
 function initAuth() {
-  supa.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'PASSWORD_RECOVERY' && session?.user) {
-      currentUser = session.user;
-      showPasswordRecoveryForm();
-      return;
-    }
-
-    if (isPasswordRecovery) {
-      showPasswordRecoveryForm();
-      return;
-    }
-
-    if (session?.user) {
-      currentUser = session.user;
-      await loadProfile();
-      if (isPasswordRecovery) return;
-      showApp();
-    } else {
-      currentUser    = null;
-      currentProfile = null;
-      hideApp();
-    }
+  // O callback não pode aguardar chamadas ao Supabase: isso trava o login (deadlock
+  // no lock da sessão). Por isso o tratamento roda fora dele, com setTimeout.
+  supa.auth.onAuthStateChange((event, session) => {
+    setTimeout(() => handleAuthChange(event, session), 0);
   });
+}
+
+async function handleAuthChange(event, session) {
+  if (event === 'PASSWORD_RECOVERY' && session?.user) {
+    currentUser = session.user;
+    showPasswordRecoveryForm();
+    return;
+  }
+
+  if (isPasswordRecovery) {
+    showPasswordRecoveryForm();
+    return;
+  }
+
+  if (session?.user) {
+    currentUser = session.user;
+    await loadProfile();
+    if (isPasswordRecovery) return;
+    showApp();
+  } else {
+    currentUser    = null;
+    currentProfile = null;
+    hideApp();
+  }
 }
 
 // ─────────────────────────────────────────
