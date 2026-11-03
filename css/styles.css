@@ -713,6 +713,23 @@ select { cursor: pointer; }
 .login-tab:hover:not(.active) { color: var(--fg); }
 .login-tab:active { transform: scale(.97); }
 .login-tab.active { background: var(--bg2); color: var(--fg); box-shadow: var(--shadow); }
+.confirm-box { flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.confirm-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 45%, transparent);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--success) 28%, transparent);
+}
+.confirm-icon.err {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--danger) 28%, transparent);
+}
+.confirm-title { font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--fg); margin: 0; }
+.confirm-text  { font-size: 13.5px; line-height: 1.55; color: var(--fg2); margin: 0 0 4px; }
 .login-link {
   border: none; background: none; color: var(--accent);
   font: inherit; font-size: 12.5px; cursor: pointer; text-align: center;

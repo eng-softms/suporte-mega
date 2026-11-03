@@ -56,6 +56,20 @@
       <div class="sub">Suporte TI</div>
     </div>
 
+    <!-- Retorno do link de confirmação de e-mail -->
+    <div id="form-email-confirmed" class="confirm-box" style="display:none" role="status" aria-live="polite">
+      <div class="confirm-icon" id="ec-icon">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+      </div>
+      <h2 class="confirm-title" id="ec-title">Conta cadastrada com sucesso!</h2>
+      <p class="confirm-text" id="ec-text">
+        Seu e-mail foi confirmado. Agora vá para a página de login e entre com o e-mail e a senha que você cadastrou.
+      </p>
+      <button type="button" class="btn btn-primary" onclick="leaveEmailConfirmed()" style="width:100%;justify-content:center;padding:10px">
+        Ir para o login
+      </button>
+    </div>
+
     <!-- Abas -->
     <div class="login-tabs">
       <button class="login-tab active" id="tab-login"    onclick="showLoginTab('login')">Entrar</button>

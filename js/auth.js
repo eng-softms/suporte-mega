@@ -7,7 +7,55 @@ let currentProfile = null;   // Perfil: id, nome de exibição, função e e-mai
 let isPasswordRecovery = false;
 let pendingLoginErr = null;  // Mensagem a exibir na tela de acesso após encerrar a sessão
 
-const ROLE_LABELS = { superadmin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
+// Retorno do link enviado por e-mail no cadastro ('ok' ou mensagem de erro).
+// Lido antes de o Supabase ser criado (app.js): o hash é removido para que o
+// link não abra uma sessão; a pessoa entra depois pela tela de login.
+let emailConfirmation = readEmailConfirmation();
+
+function readEmailConfirmation() {
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  let result = null;
+  if (params.get('type') === 'signup') {
+    result = 'ok';
+  } else if (params.get('error_code') || params.get('error_description')) {
+    result = params.get('error_code') === 'otp_expired'
+      ? 'Este link de confirmação expirou ou já foi usado.'
+      : 'Não foi possível validar o link de confirmação.';
+  }
+  if (result) history.replaceState(null, '', window.location.pathname + window.location.search);
+  return result;
+}
+
+function showEmailConfirmed() {
+  const ok = emailConfirmation === 'ok';
+  document.documentElement.classList.remove('booting');
+  document.getElementById('login-screen').style.display = '';
+  document.getElementById('app-root').style.display = 'none';
+  document.querySelector('.login-tabs').style.display = 'none';
+  ['form-login', 'form-register', 'form-forgot-password', 'form-reset-password']
+    .forEach(id => { document.getElementById(id).style.display = 'none'; });
+
+  document.getElementById('ec-icon').classList.toggle('err', !ok);
+  if (!ok) {
+    document.getElementById('ec-icon').innerHTML =
+      '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+    document.getElementById('ec-title').textContent = 'Não foi possível confirmar';
+    document.getElementById('ec-text').textContent = emailConfirmation +
+      ' Vá para a página de login e tente entrar; se não conseguir, faça o cadastro novamente para receber um novo link.';
+  }
+  document.getElementById('form-email-confirmed').style.display = 'flex';
+}
+
+// Sai da tela de confirmação e retoma o fluxo normal de acesso
+async function leaveEmailConfirmed() {
+  emailConfirmation = null;
+  document.getElementById('form-email-confirmed').style.display = 'none';
+  showLoginTab('login');
+  const { data } = await supa.auth.getSession();
+  handleAuthChange('INITIAL_SESSION', data?.session);
+}
+
+const ROLE_LABELS ={ superadmin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
 
 // Administrador e super administrador acessam a área administrativa
 function hasAdminAccess() {
@@ -195,9 +243,13 @@ async function doRegister() {
   const btn = document.getElementById('r-btn');
   btn.disabled = true; btn.textContent = 'Criando conta…';
 
+  // O link de confirmação volta para esta mesma página, que mostra a mensagem de sucesso
   const { data, error } = await supa.auth.signUp({
     email, password: senha,
-    options: { data: { display_name: nome } }
+    options: {
+      data: { display_name: nome },
+      emailRedirectTo: `${window.location.origin}${window.location.pathname}`,
+    }
   });
 
   btn.disabled = false; btn.textContent = 'Criar conta';
@@ -239,6 +291,11 @@ function initAuth() {
 }
 
 async function handleAuthChange(event, session) {
+  if (emailConfirmation) {
+    showEmailConfirmed();
+    return;
+  }
+
   if (event === 'PASSWORD_RECOVERY' && session?.user) {
     currentUser = session.user;
     showPasswordRecoveryForm();
