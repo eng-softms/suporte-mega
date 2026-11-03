@@ -784,6 +784,7 @@ select { cursor: pointer; }
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600;
 }
+.role-superadmin { background: color-mix(in srgb, #d97706 20%, transparent); color: #d97706; }
 .role-admin { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
 .role-user  { background: color-mix(in srgb, var(--fg3)   18%, transparent); color: var(--fg3); }
 

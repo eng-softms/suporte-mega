@@ -15,7 +15,7 @@ async function loadChamados() {
   let query = supa.from('chamados').select('*').order('criado_em', { ascending: false });
 
   // Usuário comum: só vê os próprios chamados
-  if (currentProfile && currentProfile.role !== 'admin') {
+  if (currentProfile && !hasAdminAccess()) {
     query = query.eq('user_id', currentUser.id);
   }
 
@@ -330,7 +330,7 @@ function renderChamadosTable(list) {
   const el = document.getElementById('chamados-table-body');
   if (!el) return;
 
-  const isAdmin = currentProfile?.role === 'admin';
+  const isAdmin = hasAdminAccess();
 
   // Seta indicando a coluna e a direção da ordenação
   document.querySelectorAll('#page-chamados th[data-sort]').forEach(th => {
@@ -365,7 +365,7 @@ function renderChamadosTable(list) {
 
 // Atualiza cabeçalho de "Solicitante" baseado no perfil
 function updateChamadosTableHeader() {
-  const isAdmin = currentProfile?.role === 'admin';
+  const isAdmin = hasAdminAccess();
   const header  = document.getElementById('th-solicitante');
   if (header) header.textContent = isAdmin ? 'Solicitante' : 'Nome';
 }
@@ -392,7 +392,7 @@ async function openDetalhe(id) {
   if (!c) return;
   const requestId = ++detailRequestId;
 
-  const isAdmin   = currentProfile?.role === 'admin';
+  const isAdmin   = hasAdminAccess();
   const canEdit   = isAdmin;
   const canDelete = isAdmin;
 
@@ -664,7 +664,7 @@ async function exportCSV() {
   const list = getSortedFiltered();
   if (!list.length) { toast('Nenhum dado para exportar.', 'info'); return; }
 
-  const isAdmin = currentProfile?.role === 'admin';
+  const isAdmin = hasAdminAccess();
   const cols    = ['ID','Data','Loja','Solicitante','E-mail','Contato','Categoria','Prioridade','Status','Assunto','Equipamento','Descrição'];
   const rows    = list.map(c => [
     c.id, fmtDate(c.criadoEm), c.loja, c.nome,

@@ -5,6 +5,24 @@
 let currentUser    = null;   // Objeto do usuário autenticado no Supabase
 let currentProfile = null;   // Perfil: id, nome de exibição, função e e-mail
 let isPasswordRecovery = false;
+let pendingLoginErr = null;  // Mensagem a exibir na tela de acesso após encerrar a sessão
+
+const ROLE_LABELS = { superadmin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
+
+// Administrador e super administrador acessam a área administrativa
+function hasAdminAccess() {
+  return currentProfile?.role === 'admin' || currentProfile?.role === 'superadmin';
+}
+
+// Somente o super administrador altera funções e e-mails autorizados
+function isSuperAdmin() {
+  return currentProfile?.role === 'superadmin';
+}
+
+function roleBadge(role) {
+  const cls = role === 'superadmin' ? 'role-superadmin' : role === 'admin' ? 'role-admin' : 'role-user';
+  return `<span class="role-badge ${cls}">${ROLE_LABELS[role] || ROLE_LABELS.user}</span>`;
+}
 
 // ─────────────────────────────────────────
 // Tela de acesso
@@ -166,7 +184,7 @@ async function doLogin() {
 // ── Cadastro de conta ──
 async function doRegister() {
   const nome  = document.getElementById('r-nome').value.trim();
-  const email = document.getElementById('r-email').value.trim();
+  const email = document.getElementById('r-email').value.trim().toLowerCase();
   const senha = document.getElementById('r-senha').value;
   setLoginErr('r', '');
 
@@ -184,17 +202,16 @@ async function doRegister() {
 
   btn.disabled = false; btn.textContent = 'Criar conta';
 
-  if (error) { setLoginErr('r', error.message); return; }
-
-  // Cria o perfil imediatamente (o gatilho SQL faz o mesmo, mas garantimos aqui).
-  if (data?.user) {
-    await supa.from('profiles').upsert({
-      id:           data.user.id,
-      display_name: nome,
-      role:         'user',
-      email:        email,
-    });
+  if (error) {
+    // O gatilho do banco recusa e-mails fora da lista; o Supabase devolve um erro genérico
+    const msg = error.message.includes('Database error saving new user')
+      ? 'Este e-mail não está autorizado a se cadastrar. Procure o suporte de TI.'
+      : error.message;
+    setLoginErr('r', msg);
+    return;
   }
+
+  // O perfil é criado pelo gatilho SQL; a função (role) é sempre definida pelo banco.
 
   // O Supabase pode exigir confirmação de e-mail (depende das configurações do projeto).
   if (!data?.session) {
@@ -236,6 +253,7 @@ async function handleAuthChange(event, session) {
   if (session?.user) {
     currentUser = session.user;
     await loadProfile();
+    if (!(await checkAuthorized())) return;
     if (isPasswordRecovery) return;
     showApp();
   } else {
@@ -261,9 +279,9 @@ async function loadProfile() {
     // Cria perfil se ainda não existir
     const nome = currentUser.user_metadata?.display_name
               || currentUser.email.split('@')[0];
-    const profile = { id: currentUser.id, display_name: nome, role: 'user', email: currentUser.email };
+    const profile = { id: currentUser.id, display_name: nome, email: currentUser.email };
     await supa.from('profiles').insert(profile);
-    currentProfile = profile;
+    currentProfile = { ...profile, role: 'user' };
   }
 
   // Garante e-mail sincronizado
@@ -272,6 +290,18 @@ async function loadProfile() {
   }
 
   updateUserMenuUI();
+}
+
+// Contas com e-mail fora da lista de autorizados não entram no sistema.
+// Administradores passam sempre, para nunca ficarem trancados do lado de fora.
+async function checkAuthorized() {
+  if (hasAdminAccess()) return true;
+  const { data, error } = await supa.rpc('is_authorized');
+  if (error || data) return true; // falha de rede: as políticas do banco continuam protegendo os dados
+  // hideApp() limpa os erros ao receber o evento de saída; a mensagem é exibida depois disso
+  pendingLoginErr = 'Seu e-mail não está autorizado a acessar o sistema. Procure o suporte de TI.';
+  await supa.auth.signOut();
+  return false;
 }
 
 function updateUserMenuUI() {
@@ -287,16 +317,13 @@ function updateUserMenuUI() {
   document.getElementById('dd-name').textContent  = p.display_name;
   document.getElementById('dd-email').textContent = p.email || currentUser?.email || '';
 
-  // Selo de administrador no menu suspenso
+  // Selo da função no menu suspenso
   const badge = document.getElementById('dd-role-badge');
-  if (badge) {
-    badge.className  = `role-badge ${p.role === 'admin' ? 'role-admin' : 'role-user'}`;
-    badge.textContent = p.role === 'admin' ? 'Admin' : 'Usuário';
-  }
+  if (badge) badge.outerHTML = roleBadge(p.role).replace('<span ', '<span id="dd-role-badge" ');
 
   // Mostrar ou ocultar a seção de administração na barra lateral
   const adminSection = document.getElementById('nav-admin-section');
-  if (adminSection) adminSection.style.display = p.role === 'admin' ? '' : 'none';
+  if (adminSection) adminSection.style.display = hasAdminAccess() ? '' : 'none';
 
   // Pré-preenche nome no formulário de novo chamado
   const nomeField = document.getElementById('c-nome');
@@ -330,6 +357,11 @@ function hideApp() {
   allAquisicoes = [];
   setLoginErr('l', '');
   setLoginErr('r', '');
+  if (pendingLoginErr) {
+    showLoginTab('login');
+    setLoginErr('l', pendingLoginErr);
+    pendingLoginErr = null;
+  }
 }
 
 // ─────────────────────────────────────────
@@ -432,17 +464,19 @@ async function loadUsuarios() {
     return;
   }
 
+  const canManage = isSuperAdmin();
   const rows = data.map(u => {
-    const isSelf   = u.id === currentUser?.id;
-    const isAdmin  = currentProfile?.role === 'admin';
-    const badge    = u.role === 'admin'
-      ? '<span class="role-badge role-admin">Admin</span>'
-      : '<span class="role-badge role-user">Usuário</span>';
+    const isSelf = u.id === currentUser?.id;
 
-    const actions = isAdmin && !isSelf ? `
-      <button class="btn btn-ghost btn-sm" onclick="toggleRole('${u.id}','${u.role}')">
-        ${u.role === 'admin' ? 'Revogar admin' : 'Tornar admin'}
-      </button>` : '';
+    // O super administrador não altera a própria função, para não se trancar fora
+    const actions = canManage && !isSelf
+      ? ['user', 'admin', 'superadmin']
+          .filter(r => r !== u.role)
+          .map(r => `<button class="btn btn-ghost btn-sm" onclick="setRole('${u.id}','${r}')">
+              ${r === 'user' ? 'Tornar usuário comum' : r === 'admin' ? 'Tornar admin' : 'Tornar super admin'}
+            </button>`)
+          .join('')
+      : '';
 
     return `<tr>
       <td>
@@ -454,9 +488,9 @@ async function loadUsuarios() {
           </div>
         </div>
       </td>
-      <td>${badge}</td>
+      <td>${roleBadge(u.role)}</td>
       <td><span style="font-size:11px;color:var(--fg3);font-family:var(--mono)">${u.id.substring(0,8)}…</span></td>
-      <td>${actions}</td>
+      <td><div style="display:flex;flex-wrap:wrap;gap:4px">${actions}</div></td>
     </tr>`;
   }).join('');
 
@@ -474,20 +508,80 @@ async function loadUsuarios() {
     </p>`;
 }
 
-async function toggleRole(userId, currentRole) {
-  if (!confirm(currentRole === 'admin'
-    ? 'Revogar permissão de admin deste usuário?'
-    : 'Conceder permissão de admin a este usuário?')) return;
+async function setRole(userId, newRole) {
+  if (!confirm(`Alterar a função deste usuário para "${ROLE_LABELS[newRole]}"?`)) return;
 
-  const newRole = currentRole === 'admin' ? 'user' : 'admin';
   const { error } = await supa
     .from('profiles')
     .update({ role: newRole })
     .eq('id', userId);
 
   if (error) { toast('Erro: ' + error.message, 'err'); return; }
-  toast('Permissão atualizada!', 'ok');
+  toast('Função atualizada!', 'ok');
   loadUsuarios();
+}
+
+// ─────────────────────────────────────────
+// E-mails autorizados a se cadastrar (somente super administrador)
+// ─────────────────────────────────────────
+async function loadAllowedEmails() {
+  const section = document.getElementById('allowed-emails-section');
+  if (!section) return;
+  section.style.display = isSuperAdmin() ? '' : 'none';
+  if (!isSuperAdmin()) return;
+
+  const el = document.getElementById('allowed-emails-list');
+  el.innerHTML = '<div class="loading-row"><div class="spinner"></div> Carregando e-mails…</div>';
+
+  const { data, error } = await supa
+    .from('allowed_emails')
+    .select('email')
+    .order('email');
+
+  if (error) {
+    el.innerHTML = '<div class="empty-state"><p>Erro ao carregar e-mails autorizados.</p></div>';
+    return;
+  }
+
+  const rows = data.map(a => `<tr>
+      <td>${esc(a.email)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="removeAllowedEmail('${esc(a.email)}')">Remover</button></td>
+    </tr>`).join('');
+
+  el.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>E-mail</th><th>Ações</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <p style="font-size:12px;color:var(--fg3);margin-top:12px">
+      ${data.length} e-mail(s) autorizado(s)
+    </p>`;
+}
+
+async function addAllowedEmail() {
+  const input = document.getElementById('allowed-email-input');
+  const email = input.value.trim().toLowerCase();
+  if (!email || !input.checkValidity()) { input.reportValidity(); return; }
+
+  const { error } = await supa.from('allowed_emails').insert({ email });
+  if (error) {
+    toast(error.code === '23505' ? 'Este e-mail já está autorizado.' : 'Erro: ' + error.message, 'err');
+    return;
+  }
+  input.value = '';
+  toast('E-mail autorizado!', 'ok');
+  loadAllowedEmails();
+}
+
+async function removeAllowedEmail(email) {
+  if (!confirm(`Remover "${email}" da lista? Essa pessoa não poderá mais se cadastrar nem acessar o sistema.`)) return;
+
+  const { error } = await supa.from('allowed_emails').delete().eq('email', email);
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+  toast('E-mail removido.', 'ok');
+  loadAllowedEmails();
 }
 
 // Tecla Enter nos campos de login

@@ -81,7 +81,7 @@ function closeSidebar() {
 const ADMIN_PAGES = ['equipamentos', 'internet', 'aquisicoes', 'relatorios', 'usuarios'];
 
 function navigate(page) {
-  if (ADMIN_PAGES.includes(page) && currentProfile?.role !== 'admin') {
+  if (ADMIN_PAGES.includes(page) && !hasAdminAccess()) {
     toast('Esta área é restrita a administradores.', 'err');
     return;
   }
@@ -101,7 +101,7 @@ function navigate(page) {
   if (page === 'relatorios')   renderRelatorios();
   if (page === 'chamados')     populateLojaFilter();
   if (page === 'equipamentos') populateLojaFilterEquip();
-  if (page === 'usuarios')     loadUsuarios();
+  if (page === 'usuarios')     { loadUsuarios(); loadAllowedEmails(); }
   if (page === 'internet')     loadPlanosInternet();
   if (page === 'aquisicoes')   loadAquisicoes();
 
@@ -180,7 +180,7 @@ function initUI() {
   try {
     const saved = localStorage.getItem('ti-page');
     const valid = Object.keys(PAGE_TITLES)
-      .filter(p => currentProfile?.role === 'admin' || !ADMIN_PAGES.includes(p));
+      .filter(p => hasAdminAccess() || !ADMIN_PAGES.includes(p));
     if (saved && valid.includes(saved)) {
       navigate(saved);
     } else {

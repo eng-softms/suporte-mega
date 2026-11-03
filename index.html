@@ -708,9 +708,21 @@
       </div>
       <div class="info-banner" style="margin-bottom:0">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0;margin-top:1px"><path d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1zm0 1a6 6 0 1 0 0 12A6 6 0 0 0 8 2zm-.5 3.5h1V9h-1V5.5zm0 4.5h1v1h-1v-1z"/></svg>
-        <div>Apenas admins podem ver e alterar os perfis dos outros usuários. Um usuário só se torna admin quando você promove aqui.</div>
+        <div>Admins podem ver os usuários. Somente o super administrador altera funções (usuário comum, admin ou super admin) e define quais e-mails podem se cadastrar.</div>
       </div>
       <div id="usuarios-list"><div class="loading-row"><div class="spinner"></div> Carregando…</div></div>
+
+      <div id="allowed-emails-section" style="display:none;margin-top:28px">
+        <div class="section-header">
+          <span class="section-title">E-mails autorizados</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <input class="form-control" type="email" id="allowed-email-input" placeholder="nome@megafeiraodoscalcados.com.br"
+                 style="flex:1;min-width:220px" onkeydown="if (event.key === 'Enter') addAllowedEmail()">
+          <button class="btn btn-primary" onclick="addAllowedEmail()">Autorizar e-mail</button>
+        </div>
+        <div id="allowed-emails-list"></div>
+      </div>
     </section>
 
   </div><!-- /conteúdo principal -->
