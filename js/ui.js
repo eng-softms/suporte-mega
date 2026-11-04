@@ -105,7 +105,15 @@ function navigate(page) {
   if (page === 'internet')     loadPlanosInternet();
   if (page === 'aquisicoes')   loadAquisicoes();
 
-  try { localStorage.setItem('ti-page', page); } catch (e) {}
+  currentPage = page;
+}
+
+// Página atual; volta a null ao sair, para o próximo login abrir a página inicial
+let currentPage = null;
+
+// Página aberta após o login: administradores vão para Início, usuários comuns para Chamados
+function homePage() {
+  return hasAdminAccess() ? 'dashboard' : 'chamados';
 }
 
 // ── Tema ──
@@ -176,15 +184,6 @@ function setLoading(on) {
 
 // ── Inicialização da interface ──
 function initUI() {
-  // Restaura página
-  try {
-    const saved = localStorage.getItem('ti-page');
-    const valid = Object.keys(PAGE_TITLES)
-      .filter(p => hasAdminAccess() || !ADMIN_PAGES.includes(p));
-    if (saved && valid.includes(saved)) {
-      navigate(saved);
-    } else {
-      navigate('dashboard');
-    }
-  } catch (e) { navigate('dashboard'); }
+  // Na primeira chamada abre a página inicial; depois reabre a atual já com os dados
+  navigate(currentPage || homePage());
 }

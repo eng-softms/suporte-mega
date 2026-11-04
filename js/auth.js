@@ -408,6 +408,7 @@ function showApp() {
 function hideApp() {
   document.documentElement.classList.remove('booting');
   appStartedFor = null;
+  currentPage = null;
   document.getElementById('login-screen').style.display = '';
   document.getElementById('app-root').style.display     = 'none';
   allChamados    = [];

@@ -49,17 +49,21 @@ function renderEquipamentos() {
   const loja  = document.getElementById('ef-loja')?.value    || '';
   const tipo  = document.getElementById('ef-tipo')?.value    || '';
   const stat  = document.getElementById('ef-status')?.value  || '';
+  const resp  = populateResponsavelFilter();
 
   const list = allEquipamentos.filter(e => {
     if (loja && e.loja   !== loja)   return false;
     if (tipo && e.tipo   !== tipo)   return false;
     if (stat && e.status !== stat)   return false;
+    if (resp === SEM_RESPONSAVEL ? respKey(e.responsavel) : resp && respKey(e.responsavel) !== resp) return false;
     if (busca) {
       const hay = [e.serie, e.marca, e.modelo, e.loja, e.obs, e.responsavel].join(' ').toLowerCase();
       if (!hay.includes(busca)) return false;
     }
     return true;
   });
+
+  setText('equip-count', `${list.length} de ${allEquipamentos.length} equipamento(s)`);
 
   if (!list.length) {
     el.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--fg3)">Nenhum equipamento encontrado</td></tr>`;
@@ -91,14 +95,39 @@ function renderEquipamentos() {
         <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteEquip('${e.id}')">Excluir</button>
       </td>
     </tr>`).join('');
-
-  // Contador
-  setText('equip-count', `${list.length} de ${allEquipamentos.length} equipamento(s)`);
 }
 
 // ─────────────────────────────────────────
 // Filtros de equipamentos
 // ─────────────────────────────────────────
+const SEM_RESPONSAVEL = '__sem__';
+
+// Nome do responsável normalizado ("joão " e "João" contam como a mesma pessoa)
+function respKey(nome) {
+  return (nome || '').trim().toLocaleLowerCase('pt-BR');
+}
+
+// Monta a lista de responsáveis a partir dos equipamentos cadastrados,
+// mantendo a seleção atual. Devolve o valor selecionado.
+function populateResponsavelFilter() {
+  const sel = document.getElementById('ef-responsavel');
+  if (!sel) return '';
+  const atual = sel.value;
+
+  const nomes = new Map(); // chave normalizada → nome como foi digitado
+  allEquipamentos.forEach(e => {
+    const k = respKey(e.responsavel);
+    if (k && !nomes.has(k)) nomes.set(k, e.responsavel.trim());
+  });
+  const ordenados = [...nomes.entries()].sort((a, b) => a[1].localeCompare(b[1], 'pt-BR'));
+
+  sel.innerHTML = '<option value="">Todos os responsáveis</option>' +
+    ordenados.map(([k, nome]) => `<option value="${esc(k)}">${esc(nome)}</option>`).join('') +
+    `<option value="${SEM_RESPONSAVEL}">Sem responsável</option>`;
+
+  sel.value = [...sel.options].some(o => o.value === atual) ? atual : '';
+  return sel.value;
+}
 function populateLojaFilterEquip() {
   const sel = document.getElementById('ef-loja');
   if (!sel || sel.dataset.populated) return;

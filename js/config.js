@@ -36,7 +36,7 @@ const STATUS_ORDER = { 'Aberto':0,'Em Andamento':1,'Aguardando usuário':2,'Reso
 
 // ── Títulos das páginas ──
 const PAGE_TITLES = {
-  dashboard:   'Dashboard',
+  dashboard:   'Início',
   chamados:    'Chamados',
   novo:        'Novo Chamado',
   equipamentos:'Equipamentos',
