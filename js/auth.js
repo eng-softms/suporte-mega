@@ -6,6 +6,7 @@ let currentUser    = null;   // Objeto do usuário autenticado no Supabase
 let currentProfile = null;   // Perfil: id, nome de exibição, função e e-mail
 let isPasswordRecovery = false;
 let pendingLoginErr = null;  // Mensagem a exibir na tela de acesso após encerrar a sessão
+let usuariosById = {};       // Perfis listados em "Gerenciar Usuários", por id
 
 // Retorno do link enviado por e-mail no cadastro ('ok' ou mensagem de erro).
 // Lido antes de o Supabase ser criado (app.js): o hash é removido para que o
@@ -522,6 +523,7 @@ async function loadUsuarios() {
   }
 
   const canManage = isSuperAdmin();
+  usuariosById = Object.fromEntries(data.map(u => [u.id, u]));
   const rows = data.map(u => {
     const isSelf = u.id === currentUser?.id;
 
@@ -532,7 +534,8 @@ async function loadUsuarios() {
           .map(r => `<button class="btn btn-ghost btn-sm" onclick="setRole('${u.id}','${r}')">
               ${r === 'user' ? 'Tornar usuário comum' : r === 'admin' ? 'Tornar admin' : 'Tornar super admin'}
             </button>`)
-          .join('')
+          .join('') +
+        `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">Excluir</button>`
       : '';
 
     return `<tr>
@@ -575,6 +578,20 @@ async function setRole(userId, newRole) {
 
   if (error) { toast('Erro: ' + error.message, 'err'); return; }
   toast('Função atualizada!', 'ok');
+  loadUsuarios();
+}
+
+// Exclui a conta de vez (somente super administrador; a função SQL confere isso).
+// Os chamados abertos pela pessoa continuam no sistema, sem o vínculo com a conta.
+async function deleteUser(userId) {
+  const u = usuariosById[userId];
+  const quem = u ? `${u.display_name} (${u.email || 'sem e-mail'})` : 'este usuário';
+  if (!confirm(`Excluir a conta de ${quem}?\n\nEssa ação não pode ser desfeita. ` +
+    'Para impedir um novo cadastro, remova também o e-mail da lista de autorizados.')) return;
+
+  const { error } = await supa.rpc('delete_user', { target: userId });
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+  toast('Usuário excluído.', 'ok');
   loadUsuarios();
 }
 
