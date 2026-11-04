@@ -644,7 +644,17 @@
     <section class="page" id="page-relatorios">
       <div class="section-header">
         <span class="section-title">Relatórios</span>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div class="seg" role="group" aria-label="Tipo de gráfico">
+            <button type="button" data-chart-mode="barras" onclick="setRelChartMode('barras')" aria-pressed="true">
+              <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" aria-hidden="true"><path d="M2 3h8v2H2zM2 7h12v2H2zM2 11h5v2H2z"/></svg>
+              Barras
+            </button>
+            <button type="button" data-chart-mode="pizza" onclick="setRelChartMode('pizza')" aria-pressed="false">
+              <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" aria-hidden="true"><path d="M7 1.5A6.5 6.5 0 1 0 14.5 9H7V1.5zM9 0v7h7A7 7 0 0 0 9 0z"/></svg>
+              Pizza
+            </button>
+          </div>
           <select class="filter-select" id="rel-periodo" onchange="renderRelatorios()">
             <option value="0">Todo período</option>
             <option value="7">Últimos 7 dias</option>
