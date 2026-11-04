@@ -713,7 +713,27 @@ select { cursor: pointer; }
 .login-tab:hover:not(.active) { color: var(--fg); }
 .login-tab:active { transform: scale(.97); }
 .login-tab.active { background: var(--bg2); color: var(--fg); box-shadow: var(--shadow); }
-.confirm-box { flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+/* ── Convite de instalação do aplicativo ── */
+.install-icon {
+  border-radius: 22px;
+  box-shadow: 0 8px 28px rgba(0, 8, 30, .5), 0 0 32px color-mix(in srgb, var(--neon) 22%, transparent);
+}
+.install-name { font-family: var(--display); font-size: 18px; font-weight: 700; color: var(--fg); }
+.install-text { font-size: 13.5px; line-height: 1.55; color: var(--fg2); margin: 6px 0 0; }
+.install-list {
+  list-style: none; margin: 0; padding: 0; width: 100%;
+  display: flex; flex-direction: column; gap: 6px; text-align: left;
+}
+.install-list li {
+  font-size: 13px; color: var(--fg); padding: 8px 12px 8px 34px; position: relative;
+  background: var(--bg3); border-radius: var(--radius-sm);
+}
+.install-list li::before {
+  content: '✓'; position: absolute; left: 12px; color: var(--success); font-weight: 700;
+}
+.install-hint { font-size: 12px; color: var(--fg3); margin: 0; line-height: 1.5; }
+
+.confirm-box {flex-direction: column; align-items: center; gap: 14px; text-align: center; }
 .confirm-icon {
   width: 64px; height: 64px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;

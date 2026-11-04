@@ -3,7 +3,7 @@
 //  Permite instalar o aplicativo e mantém recursos básicos em cache
 // ═══════════════════════════════════════════════════════
 
-const CACHE_NAME = 'suporte-mega-v11';
+const CACHE_NAME = 'suporte-mega-v12';
 
 // Arquivos que serão armazenados em cache para acesso básico sem conexão
 const ASSETS = [
@@ -18,11 +18,15 @@ const ASSETS = [
   './js/internet.js',
   './js/aquisicoes.js',
   './js/relatorios.js',
+  './js/install.js',
   './js/app.js',
   './manifest.json',
   './img/bg-waves.svg',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './icon-maskable-192.png',
+  './icon-maskable-512.png',
+  './favicon-48.png'
 ];
 
 // ── Instalação: armazena os recursos estáticos em cache ──────────────
@@ -49,6 +53,9 @@ self.addEventListener('activate', event => {
 
 // ── Busca: prioriza a rede para o Supabase e o cache para os recursos ──
 self.addEventListener('fetch', event => {
+  // Só leituras vão para o cache; envios seguem direto para a rede
+  if (event.request.method !== 'GET') return;
+
   const url = new URL(event.request.url);
 
   // As requisições ao Supabase sempre usam a rede (dados em tempo real).

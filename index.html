@@ -12,6 +12,8 @@
 
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#050b18">
+  <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
 
   <!-- Estilos -->
   <link rel="stylesheet" href="css/styles.css">
@@ -838,6 +840,38 @@
   </div>
 </div>
 
+<!-- Janela modal: convite para instalar o aplicativo -->
+<div class="modal-overlay" id="modal-install">
+  <div class="modal install-modal" style="max-width:420px" role="dialog" aria-labelledby="install-title">
+    <div class="modal-header">
+      <span class="modal-title" id="install-title">Instale o aplicativo</span>
+      <button class="modal-close" onclick="dismissInstall()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body" style="gap:16px;align-items:center;text-align:center">
+      <img src="icon-192.png" alt="" width="104" height="104" class="install-icon">
+      <div>
+        <div class="install-name">Suporte TI – Mega Feirão</div>
+        <p class="install-text">
+          Instale o sistema de chamados no seu computador e abra direto pelo ícone,
+          sem precisar procurar o link no navegador.
+        </p>
+      </div>
+      <ul class="install-list">
+        <li>Ícone na área de trabalho e no menu Iniciar</li>
+        <li>Abre em janela própria, como um programa</li>
+        <li>Mais rápido para abrir chamados</li>
+      </ul>
+      <p class="install-hint">
+        Se aparecer a opção <strong>“Criar atalho na área de trabalho”</strong> depois da instalação, deixe-a marcada.
+      </p>
+      <div style="display:flex;gap:8px;width:100%">
+        <button class="btn btn-ghost" onclick="dismissInstall()" style="flex:1;justify-content:center">Agora não</button>
+        <button class="btn btn-primary" onclick="installApp()" style="flex:2;justify-content:center">Instalar aplicativo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Janela modal: editar perfil -->
 <div class="modal-overlay" id="modal-perfil">
   <div class="modal" style="max-width:400px">
@@ -1037,6 +1071,7 @@
 <script src="js/internet.js"></script>
 <script src="js/aquisicoes.js"></script>
 <script src="js/relatorios.js"></script>
+<script src="js/install.js"></script>
 <script src="js/app.js"></script>
 
 </body>

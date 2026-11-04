@@ -402,6 +402,7 @@ function showApp() {
   if (appStartedFor === currentUser?.id) return;
   appStartedFor = currentUser?.id;
   initDb();
+  maybeOfferInstall(); // install.js — convite para instalar o aplicativo
 }
 
 function hideApp() {
