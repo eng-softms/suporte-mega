@@ -15,6 +15,10 @@ async function loadEquipamentos() {
 
   if (error) {
     console.error('loadEquipamentos:', error.message);
+    const body = document.getElementById('equip-table-body');
+    if (body) {
+      body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--danger)">Não foi possível carregar os equipamentos: ${esc(error.message)}</td></tr>`;
+    }
     throw error;
   }
   allEquipamentos = (data || []).map(r => ({
@@ -244,6 +248,8 @@ async function submitEquip(ev) {
       toast('Equipamento cadastrado!', 'ok');
     }
     closeModal('modal-equip');
+    // Recarrega na hora; o tempo real atualiza os outros administradores
+    await loadEquipamentos();
   } catch (e) {
     toast('Erro: ' + e.message, 'err');
   } finally {
@@ -258,6 +264,7 @@ async function deleteEquip(id) {
     const { error } = await supa.from('equipamentos').delete().eq('id', id);
     if (error) throw error;
     toast('Equipamento removido.', 'info');
+    await loadEquipamentos();
   } catch (e) {
     toast('Erro: ' + e.message, 'err');
   }

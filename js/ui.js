@@ -78,7 +78,7 @@ function closeSidebar() {
 }
 
 // ── Navegação ──
-const ADMIN_PAGES = ['equipamentos', 'internet', 'aquisicoes', 'relatorios', 'usuarios'];
+const ADMIN_PAGES = ['equipamentos', 'internet', 'aquisicoes', 'tickets', 'relatorios', 'usuarios'];
 
 function navigate(page) {
   if (ADMIN_PAGES.includes(page) && !hasAdminAccess()) {
@@ -100,7 +100,12 @@ function navigate(page) {
   // Ações executadas ao abrir cada página
   if (page === 'relatorios')   renderRelatorios();
   if (page === 'chamados')     populateLojaFilter();
-  if (page === 'equipamentos') populateLojaFilterEquip();
+  if (page === 'equipamentos') {
+    populateLojaFilterEquip();
+    // Busca de novo ao abrir a aba, para mostrar o que outros administradores cadastraram
+    loadEquipamentos().catch(e => toast('Erro ao carregar equipamentos: ' + e.message, 'err'));
+  }
+  if (page === 'tickets')      loadTickets();
   if (page === 'usuarios')     { loadUsuarios(); loadAllowedEmails(); }
   if (page === 'internet')     loadPlanosInternet();
   if (page === 'aquisicoes')   loadAquisicoes();

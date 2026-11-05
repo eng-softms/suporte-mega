@@ -206,6 +206,10 @@
         <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h2.2l.5 2H15l-1.6 6H4.6L2.4 3H1V2zm3.9 3 1.1 4h6.6l1-4H4.9zM6 12a1.25 1.25 0 1 1 0 2.5A1.25 1.25 0 0 1 6 12zm6 0a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5z"/></svg>
         Aquisição de Equipamentos
       </button>
+      <button class="nav-item" data-page="tickets" onclick="navigate('tickets')">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 4h14v2.5a1.5 1.5 0 0 0 0 3V12H1V9.5a1.5 1.5 0 0 0 0-3V4zm1 1v.8a2.5 2.5 0 0 1 0 4.4V11h12v-.8a2.5 2.5 0 0 1 0-4.4V5H2zm8 0h1v1h-1V5zm0 2h1v1h-1V7zm0 2h1v1h-1V9z"/></svg>
+        Tickets Data System
+      </button>
       <button class="nav-item" data-page="relatorios" onclick="navigate('relatorios')">
         <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 2h10v12H3V2zm1 1v10h8V3H4zm1 2h6v1H5V5zm0 2h6v1H5V7zm0 2h4v1H5V9z"/></svg>
         Relatórios
@@ -643,6 +647,70 @@
       </div>
     </section>
 
+    <!-- ════════ TICKETS DATA SYSTEM (administrador) ════════ -->
+    <section class="page" id="page-tickets">
+      <div class="stats-row" style="margin-bottom:16px">
+        <button type="button" class="stat-card success clickable" onclick="filterTicketSituacao('Resolvido')">
+          <div class="stat-label">Resolvidos</div>
+          <div class="stat-value" id="tk-stat-resolvido">–</div>
+          <div class="stat-sub">Ver lista <span class="stat-go" aria-hidden="true">→</span></div>
+        </button>
+        <button type="button" class="stat-card danger clickable" onclick="filterTicketSituacao('Não resolvido')">
+          <div class="stat-label">Não resolvidos</div>
+          <div class="stat-value" id="tk-stat-nao-resolvido">–</div>
+          <div class="stat-sub">Ver lista <span class="stat-go" aria-hidden="true">→</span></div>
+        </button>
+        <button type="button" class="stat-card warning clickable" onclick="filterTicketSituacao('Em andamento')">
+          <div class="stat-label">Em andamento</div>
+          <div class="stat-value" id="tk-stat-andamento">–</div>
+          <div class="stat-sub">Ver lista <span class="stat-go" aria-hidden="true">→</span></div>
+        </button>
+        <button type="button" class="stat-card accent clickable" onclick="filterTicketSituacao('Não informado')">
+          <div class="stat-label">Não informados</div>
+          <div class="stat-value" id="tk-stat-nao-informado">–</div>
+          <div class="stat-sub">Ver lista <span class="stat-go" aria-hidden="true">→</span></div>
+        </button>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Tickets Data System</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span id="ticket-count" style="font-size:12px;color:var(--fg3)"></span>
+          <button class="btn btn-primary" onclick="openNovoTicket()">
+            <span aria-hidden="true">+</span> Novo ticket
+          </button>
+        </div>
+      </div>
+
+      <div class="filters-bar">
+        <input class="filter-input" type="search" id="ticket-busca" placeholder="Buscar por número ou descrição…" oninput="renderTickets()">
+        <select class="filter-select" id="ticket-situacao" onchange="renderTickets()">
+          <option value="">Todas as situações</option>
+          <option>Resolvido</option>
+          <option>Não resolvido</option>
+          <option>Em andamento</option>
+          <option>Não informado</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nº do Ticket</th>
+              <th>Descrição do Atendimento</th>
+              <th>Data do Atendimento</th>
+              <th>Situação</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="ticket-table-body">
+            <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--fg3)">Carregue esta aba para consultar os tickets.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- ════════ RELATÓRIOS (administrador) ════════ -->
     <section class="page" id="page-relatorios">
       <div class="section-header">
@@ -991,6 +1059,48 @@
   </div>
 </div>
 
+<!-- Janela modal: novo / editar ticket Data System -->
+<div class="modal-overlay" id="modal-ticket">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <span class="modal-title" id="ticket-modal-title">Novo ticket</span>
+      <button class="modal-close" onclick="closeModal('modal-ticket')">✕ Fechar</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-ticket" onsubmit="submitTicket(event)" style="display:flex;flex-direction:column;gap:14px">
+        <input type="hidden" id="ticket-id">
+        <div class="field-row">
+          <div class="field">
+            <label for="ticket-form-numero">Nº do Ticket *</label>
+            <input id="ticket-form-numero" type="text" required maxlength="30" inputmode="numeric" placeholder="Ex.: 1085353">
+          </div>
+          <div class="field">
+            <label for="ticket-form-data">Data do Atendimento</label>
+            <input id="ticket-form-data" type="date">
+          </div>
+        </div>
+        <div class="field">
+          <label for="ticket-form-situacao">Situação</label>
+          <select id="ticket-form-situacao">
+            <option>Resolvido</option>
+            <option>Não resolvido</option>
+            <option>Em andamento</option>
+            <option>Não informado</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ticket-form-descricao">Descrição do Atendimento</label>
+          <textarea id="ticket-form-descricao" rows="4" maxlength="2000" placeholder="O que foi pedido ao suporte da Data System"></textarea>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button type="submit" class="btn btn-primary" id="btn-save-ticket">Salvar ticket</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-ticket')">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- Janela modal: novo / editar item de aquisição -->
 <div class="modal-overlay" id="modal-aquisicao">
   <div class="modal" style="max-width:760px">
@@ -1083,6 +1193,7 @@
 <script src="js/equipamentos.js"></script>
 <script src="js/internet.js"></script>
 <script src="js/aquisicoes.js"></script>
+<script src="js/tickets.js"></script>
 <script src="js/relatorios.js"></script>
 <script src="js/install.js"></script>
 <script src="js/app.js"></script>

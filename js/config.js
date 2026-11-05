@@ -42,6 +42,7 @@ const PAGE_TITLES = {
   equipamentos:'Equipamentos',
   internet:    'Internet das Lojas',
   aquisicoes:  'Aquisição de Equipamentos',
+  tickets:     'Tickets Data System',
   relatorios:  'Relatórios',
   usuarios:    'Gerenciar Usuários',
 };

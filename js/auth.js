@@ -415,6 +415,7 @@ function hideApp() {
   allEquipamentos = [];
   allPlanosInternet = [];
   allAquisicoes = [];
+  allTickets = [];
   setLoginErr('l', '');
   setLoginErr('r', '');
   if (pendingLoginErr) {

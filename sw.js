@@ -3,7 +3,7 @@
 //  Permite instalar o aplicativo e mantém recursos básicos em cache
 // ═══════════════════════════════════════════════════════
 
-const CACHE_NAME = 'suporte-mega-v14';
+const CACHE_NAME = 'suporte-mega-v15';
 
 // Arquivos que serão armazenados em cache para acesso básico sem conexão
 const ASSETS = [
@@ -17,6 +17,7 @@ const ASSETS = [
   './js/equipamentos.js',
   './js/internet.js',
   './js/aquisicoes.js',
+  './js/tickets.js',
   './js/relatorios.js',
   './js/install.js',
   './js/app.js',
