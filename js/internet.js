@@ -83,7 +83,7 @@ function renderPlanosInternet() {
       <td class="wrap">${esc(item.observacoes || '–')}</td>
       <td>${esc(item.uso || '–')}</td>
       <td>${esc(item.ip || '–')}</td>
-      <td style="white-space:nowrap">
+      <td class="superadmin-only" style="white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="editPlanoInternet('${item.id}')">Editar</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deletePlanoInternet('${item.id}')">Excluir</button>
       </td>

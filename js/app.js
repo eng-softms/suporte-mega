@@ -9,16 +9,16 @@ const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
 // ── Carrega o banco de dados e assina as atualizações em tempo real ──
 async function initDb() {
   setLoading(true);
-  const isAdmin = hasAdminAccess();
+  const canSeeEquip = isSuperAdmin();
   // O formulário não depende dos dados: prepara antes para não ficar vazio se a carga falhar
   initFormNovo();
   updateChamadosTableHeader();
   initUI(); // abre logo a última página, sem esperar os dados
   try {
-    // Equipamentos são exclusivos do administrador
-    await Promise.all([loadChamados(), isAdmin ? loadEquipamentos() : Promise.resolve()]);
+    // Equipamentos são exclusivos do super administrador
+    await Promise.all([loadChamados(), canSeeEquip ? loadEquipamentos() : Promise.resolve()]);
     subscribeChamados();
-    if (isAdmin) subscribeEquipamentos();
+    if (canSeeEquip) subscribeEquipamentos();
   } catch (e) {
     const msg = e?.message || e?.details || e?.hint || JSON.stringify(e);
     console.error('initDb error:', msg, e);

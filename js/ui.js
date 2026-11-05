@@ -79,10 +79,15 @@ function closeSidebar() {
 
 // ── Navegação ──
 const ADMIN_PAGES = ['equipamentos', 'internet', 'aquisicoes', 'tickets', 'relatorios', 'usuarios'];
+const SUPERADMIN_PAGES = ['equipamentos', 'aquisicoes'];
 
 function navigate(page) {
   if (ADMIN_PAGES.includes(page) && !hasAdminAccess()) {
     toast('Esta área é restrita a administradores.', 'err');
+    return;
+  }
+  if (SUPERADMIN_PAGES.includes(page) && !isSuperAdmin()) {
+    toast('Esta área é restrita ao super administrador.', 'err');
     return;
   }
 

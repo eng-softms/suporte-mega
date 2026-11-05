@@ -7,6 +7,11 @@ let sortField   = 'criado_em';
 let sortDir     = 'desc';
 let detailRequestId = 0;
 let selectedImageFiles = [];
+let selectedVideoFile = null;
+
+// Vídeo anexado ao chamado: um por chamado, até 50 MB (limite do Supabase)
+const VIDEO_EXTENSIONS = { 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov' };
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
 
 // ─────────────────────────────────────────
 // Carregamento
@@ -48,13 +53,14 @@ function escapeHtml(value = '') {
     .replace(/'/g, '&#039;');
 }
 
-function formatDescricaoHtml(value = '', imageUrls = []) {
+function formatDescricaoHtml(value = '', imageUrls = [], videoUrls = []) {
   const raw = String(value || '').trim();
   const imageMarkers = [...raw.matchAll(/\[imagem-storage:\s*([^\]\r\n]+)\]/g)];
   const legacyImages = [...raw.matchAll(/data:image\/(?:jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+/ig)]
     .map(match => match[0]);
   const description = raw
     .replace(/\[imagem-storage:\s*[^\]\r\n]+\]/g, '')
+    .replace(/\[video-storage:\s*[^\]\r\n]+\]/g, '')
     .replace(/data:image\/(?:jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+/ig, '')
     .trim();
   const text = escapeHtml(description || 'Sem descrição.').replace(/\n/g, '<br>');
@@ -62,7 +68,71 @@ function formatDescricaoHtml(value = '', imageUrls = []) {
   const imageHtml = availableImageUrls.map((url, index) =>
     `<img src="${escapeHtml(url)}" alt="Imagem ${index + 1} anexada ao chamado" style="display:block;max-width:100%;max-height:360px;margin-top:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);">`
   ).join('');
-  return `${text}${imageMarkers.length || legacyImages.length ? imageHtml : ''}`;
+  const videoHtml = videoUrls.map((url, index) =>
+    `<video src="${escapeHtml(url)}" controls preload="metadata" aria-label="Vídeo ${index + 1} anexado ao chamado" style="display:block;width:100%;max-height:420px;margin-top:10px;border:1px solid var(--border);border-radius:8px;background:#000;"></video>`
+  ).join('');
+  return `${text}${imageMarkers.length || legacyImages.length ? imageHtml : ''}${videoHtml}`;
+}
+
+function bindVideoPreview() {
+  const input = document.getElementById('c-video');
+  const previewWrap = document.getElementById('c-video-preview');
+  const addButton = document.getElementById('btn-add-video');
+  if (!input || !previewWrap || !addButton) return;
+
+  let previewUrl = null;
+
+  const render = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+    previewWrap.replaceChildren();
+    previewWrap.style.display = selectedVideoFile ? 'flex' : 'none';
+    addButton.style.display = selectedVideoFile ? 'none' : '';
+    if (!selectedVideoFile) return;
+
+    previewUrl = URL.createObjectURL(selectedVideoFile);
+    const video = document.createElement('video');
+    video.src = previewUrl;
+    video.controls = true;
+    video.preload = 'metadata';
+    video.style.cssText = 'display:block;max-width:320px;width:100%;max-height:220px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#000';
+
+    const info = document.createElement('span');
+    info.textContent = `${selectedVideoFile.name} – ${(selectedVideoFile.size / 1024 / 1024).toFixed(1)} MB`;
+    info.style.cssText = 'color:var(--fg3);font-size:12px;word-break:break-all';
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'btn btn-ghost btn-sm';
+    removeButton.textContent = 'Remover vídeo';
+    removeButton.addEventListener('click', () => { selectedVideoFile = null; render(); });
+
+    const side = document.createElement('div');
+    side.style.cssText = 'display:flex;flex-direction:column;gap:6px;align-items:flex-start;justify-content:center';
+    side.append(info, removeButton);
+    previewWrap.append(video, side);
+  };
+
+  input.onchange = () => {
+    const file = (input.files || [])[0];
+    input.value = '';
+    if (!file) return;
+    if (!VIDEO_EXTENSIONS[file.type]) {
+      toast('Use vídeos MP4, WebM ou MOV.', 'err');
+      return;
+    }
+    if (file.size > MAX_VIDEO_SIZE) {
+      toast('O vídeo deve ter até 50 MB. Grave um trecho mais curto.', 'err');
+      return;
+    }
+    selectedVideoFile = file;
+    render();
+  };
+
+  if (input.form && !input.form.dataset.videoResetBound) {
+    input.form.addEventListener('reset', () => { selectedVideoFile = null; render(); });
+    input.form.dataset.videoResetBound = '1';
+  }
 }
 
 function bindImagePreview() {
@@ -163,6 +233,14 @@ function bindImagePreview() {
 function getStorageImagePaths(description) {
   const matches = String(description || '').matchAll(/\[imagem-storage:\s*([^\]\r\n]+)\]/g);
   const validPath = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|gif|webp)$/i;
+  return [...matches]
+    .map(match => match[1].trim())
+    .filter(path => validPath.test(path));
+}
+
+function getStorageVideoPaths(description) {
+  const matches = String(description || '').matchAll(/\[video-storage:\s*([^\]\r\n]+)\]/g);
+  const validPath = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(mp4|webm|mov)$/i;
   return [...matches]
     .map(match => match[1].trim())
     .filter(path => validPath.test(path));
@@ -401,20 +479,27 @@ async function openDetalhe(id) {
   ).join('');
 
   const imagePaths = getStorageImagePaths(c.descricao);
+  const videoPaths = getStorageVideoPaths(c.descricao);
   const imageUrls = [];
-  if (imagePaths.length) setLoading(true);
-  for (const imagePath of imagePaths) {
-    try {
-      const { data, error } = await supa.storage
-        .from('chamados-imagens')
-        .createSignedUrl(imagePath, 3600);
-      if (error) throw error;
-      imageUrls.push(data.signedUrl);
-    } catch (e) {
-      toast('Não foi possível carregar uma imagem: ' + e.message, 'err');
+  const videoUrls = [];
+  const signAll = async (paths, urls, tipo) => {
+    for (const path of paths) {
+      try {
+        const { data, error } = await supa.storage
+          .from('chamados-imagens')
+          .createSignedUrl(path, 3600);
+        if (error) throw error;
+        urls.push(data.signedUrl);
+      } catch (e) {
+        toast(`Não foi possível carregar ${tipo}: ` + e.message, 'err');
+      }
     }
-  }
-  if (imagePaths.length) setLoading(false);
+  };
+  const hasMedia = imagePaths.length || videoPaths.length;
+  if (hasMedia) setLoading(true);
+  await signAll(imagePaths, imageUrls, 'uma imagem');
+  await signAll(videoPaths, videoUrls, 'o vídeo');
+  if (hasMedia) setLoading(false);
   if (requestId !== detailRequestId) return;
 
   document.getElementById('md-titulo').textContent = c.assunto;
@@ -458,7 +543,7 @@ async function openDetalhe(id) {
 
     <div>
       <div class="detail-field-label" style="margin-bottom:6px">Descrição</div>
-      <div class="detail-body">${formatDescricaoHtml(c.descricao, imageUrls)}</div>
+      <div class="detail-body">${formatDescricaoHtml(c.descricao, imageUrls, videoUrls)}</div>
     </div>
 
     ${canEdit ? `
@@ -527,6 +612,7 @@ async function deleteChamado(id) {
 // ─────────────────────────────────────────
 function initFormNovo() {
   bindImagePreview();
+  bindVideoPreview();
 
   // Preenche a lista de lojas
   const lojasSel = document.getElementById('c-loja');
@@ -563,6 +649,7 @@ async function submitChamado(ev) {
   const assunto    = document.getElementById('c-assunto').value.trim();
   const descricao  = document.getElementById('c-descricao').value.trim();
   const imageFiles = [...selectedImageFiles];
+  const videoFile = selectedVideoFile;
   const maxImages = 5;
   const maxImageSize = 2 * 1024 * 1024;
   const fileExtensions = {
@@ -586,16 +673,21 @@ async function submitChamado(ev) {
       : 'Cada imagem deve ter até 2 MB.', 'err');
     return;
   }
+  if (videoFile && (!VIDEO_EXTENSIONS[videoFile.type] || videoFile.size > MAX_VIDEO_SIZE)) {
+    toast('Use um vídeo MP4, WebM ou MOV de até 50 MB.', 'err');
+    return;
+  }
 
   const btnHtml = btn.innerHTML;
   btn.disabled = true;
 
   const uploadedImagePaths = [];
+  let uploadedVideoPath = null;
   try {
+    if ((imageFiles.length || videoFile) && !currentUser?.id) {
+      throw new Error('Faça login novamente antes de anexar arquivos.');
+    }
     if (imageFiles.length) {
-      if (!currentUser?.id) {
-        throw new Error('Faça login novamente antes de anexar uma imagem.');
-      }
 
       for (const [index, imageFile] of imageFiles.entries()) {
         btn.textContent = `Enviando imagem ${index + 1} de ${imageFiles.length}…`;
@@ -611,8 +703,22 @@ async function submitChamado(ev) {
       }
     }
 
-    const descricaoFinal = uploadedImagePaths.length
-      ? `${descricao}${descricao ? '\n\n' : ''}${uploadedImagePaths.map(path => `[imagem-storage: ${path}]`).join('\n')}`
+    if (videoFile) {
+      btn.textContent = 'Enviando vídeo… (pode levar alguns instantes)';
+      const path = `${currentUser.id}/${crypto.randomUUID()}.${VIDEO_EXTENSIONS[videoFile.type]}`;
+      const { error: uploadError } = await supa.storage
+        .from('chamados-imagens')
+        .upload(path, videoFile, { contentType: videoFile.type, upsert: false });
+      if (uploadError) throw uploadError;
+      uploadedVideoPath = path;
+    }
+
+    const marcadores = [
+      ...uploadedImagePaths.map(path => `[imagem-storage: ${path}]`),
+      ...(uploadedVideoPath ? [`[video-storage: ${uploadedVideoPath}]`] : []),
+    ];
+    const descricaoFinal = marcadores.length
+      ? `${descricao}${descricao ? '\n\n' : ''}${marcadores.join('\n')}`
       : descricao;
     const now = new Date().toISOString();
     const payload = {
@@ -630,6 +736,7 @@ async function submitChamado(ev) {
     const { error } = await supa.from('chamados').insert(payload);
     if (error) throw error;
     uploadedImagePaths.length = 0;
+    uploadedVideoPath = null;
     toast('Chamado aberto com sucesso!', 'ok');
     ev.target.reset();
     const previewWrap = document.getElementById('c-imagem-preview');
@@ -638,11 +745,13 @@ async function submitChamado(ev) {
     navigate('chamados');
   } catch (e) {
     console.error('submitChamado:', e);
-    if (uploadedImagePaths.length) {
+    // Apaga os arquivos já enviados para não deixar anexos sem chamado
+    const enviados = [...uploadedImagePaths, ...(uploadedVideoPath ? [uploadedVideoPath] : [])];
+    if (enviados.length) {
       try {
         const { error: cleanupError } = await supa.storage
           .from('chamados-imagens')
-          .remove(uploadedImagePaths);
+          .remove(enviados);
         if (cleanupError) {
           console.error('Não foi possível remover a imagem após falha ao abrir o chamado:', cleanupError);
         }

@@ -383,6 +383,9 @@ function updateUserMenuUI() {
   const adminSection = document.getElementById('nav-admin-section');
   if (adminSection) adminSection.style.display = hasAdminAccess() ? '' : 'none';
 
+  // Itens com a classe .superadmin-only somem para quem não é super administrador
+  document.documentElement.classList.toggle('is-superadmin', isSuperAdmin());
+
   // Pré-preenche nome no formulário de novo chamado
   const nomeField = document.getElementById('c-nome');
   if (nomeField && !nomeField.value) nomeField.value = p.display_name;

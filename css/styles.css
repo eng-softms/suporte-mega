@@ -758,6 +758,9 @@ select { cursor: pointer; }
 .login-tab:hover:not(.active) { color: var(--fg); }
 .login-tab:active { transform: scale(.97); }
 .login-tab.active { background: var(--bg2); color: var(--fg); box-shadow: var(--shadow); }
+/* Equipamentos, aquisições e edição da internet: somente super administrador */
+:root:not(.is-superadmin) .superadmin-only { display: none !important; }
+
 /* ── Convite de instalação do aplicativo ── */
 .install-icon {
   border-radius: 22px;
