@@ -18,10 +18,16 @@ alter table public.tickets enable row level security;
 revoke all on table public.tickets from anon;
 grant select, insert, update, delete on table public.tickets to authenticated;
 
-drop policy if exists "tickets_admin_all" on public.tickets;
-create policy "tickets_admin_all"
-  on public.tickets
-  for all
-  to authenticated
-  using (public.is_admin())
-  with check (public.is_admin());
+-- Admin só visualiza; super administrador cadastra, edita e exclui
+drop policy if exists "tickets_admin_all"        on public.tickets;
+drop policy if exists "tickets_admin_select"     on public.tickets;
+drop policy if exists "tickets_superadmin_write" on public.tickets;
+
+create policy "tickets_admin_select"
+  on public.tickets for select to authenticated
+  using (public.is_admin());
+
+create policy "tickets_superadmin_write"
+  on public.tickets for all to authenticated
+  using (public.is_superadmin())
+  with check (public.is_superadmin());

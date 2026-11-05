@@ -3,7 +3,7 @@
 --  Execute depois de supabase-correcao-permissoes.sql (pode ser executado mais de uma vez)
 --
 --  • Equipamentos e aquisições: somente super administrador
---  • Internet das lojas: admin só visualiza; super administrador altera
+--  • Internet das lojas e tickets Data System: admin só visualiza; super administrador altera
 --  • Chamados: usuário comum não altera chamado depois de aberto
 --  • Anexos dos chamados: pasta de cada usuário, privada, aceita vídeo
 -- ═══════════════════════════════════════════════════════════════
@@ -43,6 +43,22 @@ create policy "internet_planos_admin_select"
 
 create policy "internet_planos_superadmin_write"
   on public.internet_planos for all to authenticated
+  using (public.is_superadmin())
+  with check (public.is_superadmin());
+
+-- ──────────────────────────────────────────
+-- 3b. Tickets Data System (admin lê; super administrador altera)
+-- ──────────────────────────────────────────
+drop policy if exists "tickets_admin_all"        on public.tickets;
+drop policy if exists "tickets_admin_select"     on public.tickets;
+drop policy if exists "tickets_superadmin_write" on public.tickets;
+
+create policy "tickets_admin_select"
+  on public.tickets for select to authenticated
+  using (public.is_admin());
+
+create policy "tickets_superadmin_write"
+  on public.tickets for all to authenticated
   using (public.is_superadmin())
   with check (public.is_superadmin());
 
@@ -110,6 +126,6 @@ create policy "chamados-anexos: exclusão"
 -- ──────────────────────────────────────────
 select schemaname, tablename, policyname, cmd
 from pg_policies
-where (schemaname = 'public' and tablename in ('chamados','equipamentos','aquisicoes','internet_planos'))
+where (schemaname = 'public' and tablename in ('chamados','equipamentos','aquisicoes','internet_planos','tickets'))
    or (schemaname = 'storage' and tablename = 'objects')
 order by schemaname, tablename, policyname;

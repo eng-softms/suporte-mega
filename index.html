@@ -685,7 +685,7 @@
         <span class="section-title">Tickets Data System</span>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <span id="ticket-count" style="font-size:12px;color:var(--fg3)"></span>
-          <button class="btn btn-primary" onclick="openNovoTicket()">
+          <button class="btn btn-primary superadmin-only" onclick="openNovoTicket()">
             <span aria-hidden="true">+</span> Novo ticket
           </button>
         </div>
@@ -710,7 +710,7 @@
               <th>Descrição do Atendimento</th>
               <th>Data do Atendimento</th>
               <th>Situação</th>
-              <th>Ações</th>
+              <th class="superadmin-only">Ações</th>
             </tr>
           </thead>
           <tbody id="ticket-table-body">

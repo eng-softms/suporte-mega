@@ -78,7 +78,7 @@ function renderTickets() {
       <td class="wrap" style="min-width:280px">${esc(t.descricao || '–')}</td>
       <td style="white-space:nowrap">${fmtTicketDate(t.data_atendimento)}</td>
       <td><span class="badge ${TICKET_BADGE[t.situacao] || ''}">${esc(t.situacao)}</span></td>
-      <td style="white-space:nowrap">
+      <td class="superadmin-only" style="white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="editTicket('${t.id}')">Editar</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteTicket('${t.id}')">Excluir</button>
       </td>
