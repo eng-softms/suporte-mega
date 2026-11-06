@@ -3,7 +3,7 @@
 //  Permite instalar o aplicativo e mantém recursos básicos em cache
 // ═══════════════════════════════════════════════════════
 
-const CACHE_NAME = 'suporte-mega-v17';
+const CACHE_NAME = 'suporte-mega-v18';
 
 // Arquivos que serão armazenados em cache para acesso básico sem conexão
 const ASSETS = [
@@ -66,8 +66,14 @@ self.addEventListener('fetch', event => {
   }
 
   // Para recursos estáticos: tenta a rede primeiro e usa o cache se estiver sem conexão.
+  // 'no-cache' faz o navegador confirmar com o servidor se há versão nova
+  // (evita continuar usando um JS antigo guardado no cache HTTP).
+  const req = event.request.mode === 'navigate'
+    ? event.request
+    : new Request(event.request, { cache: 'no-cache' });
+
   event.respondWith(
-    fetch(event.request)
+    fetch(req)
       .then(response => {
         // Atualiza o cache com a versão mais recente.
         const clone = response.clone();
