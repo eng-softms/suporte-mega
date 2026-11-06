@@ -676,23 +676,23 @@ document.addEventListener('keydown', e => {
   const resetVisible = document.getElementById('form-reset-password')?.style.display !== 'none'
     && document.getElementById('login-screen')?.style.display !== 'none';
 
-  if (loginVisible && (
-    document.activeElement === document.getElementById('l-email') ||
-    document.activeElement === document.getElementById('l-senha')
-  )) doLogin();
+  // Enter avança para o próximo campo; no último campo, envia o formulário
+  const enterAvancaOuEnvia = (ids, enviar) => {
+    const idx = ids.indexOf(document.activeElement?.id);
+    if (idx === -1) return;
+    e.preventDefault();
+    const proximo = idx < ids.length - 1 ? document.getElementById(ids[idx + 1]) : null;
+    if (proximo) proximo.focus();
+    else enviar();
+  };
 
-  if (regVisible && (
-    document.activeElement === document.getElementById('r-nome')  ||
-    document.activeElement === document.getElementById('r-email') ||
-    document.activeElement === document.getElementById('r-senha')
-  )) doRegister();
+  if (loginVisible) enterAvancaOuEnvia(['l-email', 'l-senha'], doLogin);
+
+  if (regVisible) enterAvancaOuEnvia(['r-nome', 'r-email', 'r-senha'], doRegister);
 
   if (forgotVisible && document.activeElement === document.getElementById('f-email')) {
     sendPasswordRecovery();
   }
 
-  if (resetVisible && (
-    document.activeElement === document.getElementById('p-senha') ||
-    document.activeElement === document.getElementById('p-senha-confirm')
-  )) updateRecoveredPassword();
+  if (resetVisible) enterAvancaOuEnvia(['p-senha', 'p-senha-confirm'], updateRecoveredPassword);
 });
