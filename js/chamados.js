@@ -13,6 +13,22 @@ let selectedVideoFile = null;
 const VIDEO_EXTENSIONS = { 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov' };
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
 
+// Documentos anexados ao chamado: até 5, de até 10 MB cada.
+// O tipo é definido pela extensão (o navegador nem sempre informa o tipo de .docx/.csv).
+let selectedDocFiles = [];
+const DOC_TYPES = {
+  pdf:  'application/pdf',
+  doc:  'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls:  'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  txt:  'text/plain',
+  csv:  'text/csv',
+};
+const MAX_DOCS = 5;
+const MAX_DOC_SIZE = 10 * 1024 * 1024;
+const getDocExt = name => (String(name).split('.').pop() || '').toLowerCase();
+
 // ─────────────────────────────────────────
 // Carregamento
 // ─────────────────────────────────────────
@@ -53,7 +69,7 @@ function escapeHtml(value = '') {
     .replace(/'/g, '&#039;');
 }
 
-function formatDescricaoHtml(value = '', imageUrls = [], videoUrls = []) {
+function formatDescricaoHtml(value = '', imageUrls = [], videoUrls = [], docLinks = []) {
   const raw = String(value || '').trim();
   const imageMarkers = [...raw.matchAll(/\[imagem-storage:\s*([^\]\r\n]+)\]/g)];
   const legacyImages = [...raw.matchAll(/data:image\/(?:jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+/ig)]
@@ -61,6 +77,7 @@ function formatDescricaoHtml(value = '', imageUrls = [], videoUrls = []) {
   const description = raw
     .replace(/\[imagem-storage:\s*[^\]\r\n]+\]/g, '')
     .replace(/\[video-storage:\s*[^\]\r\n]+\]/g, '')
+    .replace(/\[documento-storage:\s*[^\]\r\n]+\]/g, '')
     .replace(/data:image\/(?:jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+/ig, '')
     .trim();
   const text = escapeHtml(description || 'Sem descrição.').replace(/\n/g, '<br>');
@@ -71,7 +88,73 @@ function formatDescricaoHtml(value = '', imageUrls = [], videoUrls = []) {
   const videoHtml = videoUrls.map((url, index) =>
     `<video src="${escapeHtml(url)}" controls preload="metadata" aria-label="Vídeo ${index + 1} anexado ao chamado" style="display:block;width:100%;max-height:420px;margin-top:10px;border:1px solid var(--border);border-radius:8px;background:#000;"></video>`
   ).join('');
-  return `${text}${imageMarkers.length || legacyImages.length ? imageHtml : ''}${videoHtml}`;
+  const docHtml = docLinks.length ? `
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
+      ${docLinks.map(d => `
+        <a href="${escapeHtml(d.url)}" target="_blank" rel="noopener" download="${escapeHtml(d.nome)}"
+           style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--accent);text-decoration:none;font-size:13px;word-break:break-all">
+          <span aria-hidden="true">📄</span> ${escapeHtml(d.nome)}
+        </a>`).join('')}
+    </div>` : '';
+  return `${text}${imageMarkers.length || legacyImages.length ? imageHtml : ''}${videoHtml}${docHtml}`;
+}
+
+function bindDocPreview() {
+  const input = document.getElementById('c-documento');
+  const previewWrap = document.getElementById('c-documento-preview');
+  const addButton = document.getElementById('btn-add-documento');
+  if (!input || !previewWrap || !addButton) return;
+
+  const render = () => {
+    previewWrap.replaceChildren();
+    selectedDocFiles.forEach((file, index) => {
+      const item = document.createElement('div');
+      item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2)';
+
+      const info = document.createElement('span');
+      info.textContent = `📄 ${file.name} – ${(file.size / 1024 / 1024).toFixed(1)} MB`;
+      info.style.cssText = 'flex:1;font-size:12px;color:var(--fg2);word-break:break-all';
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'btn btn-ghost btn-sm';
+      removeButton.textContent = 'Remover';
+      removeButton.setAttribute('aria-label', `Remover documento ${file.name}`);
+      removeButton.addEventListener('click', () => { selectedDocFiles.splice(index, 1); render(); });
+
+      item.append(info, removeButton);
+      previewWrap.appendChild(item);
+    });
+    previewWrap.style.display = selectedDocFiles.length ? 'flex' : 'none';
+    const cheio = selectedDocFiles.length >= MAX_DOCS;
+    addButton.disabled = cheio;
+    addButton.innerHTML = cheio
+      ? '<span aria-hidden="true">+</span> Limite de documentos atingido'
+      : '<span aria-hidden="true">+</span> Adicionar documento';
+  };
+
+  input.onchange = () => {
+    const files = Array.from(input.files || []);
+    input.value = '';
+    for (const file of files) {
+      if (selectedDocFiles.length >= MAX_DOCS) {
+        toast(`Você pode anexar no máximo ${MAX_DOCS} documentos.`, 'err'); break;
+      }
+      if (!DOC_TYPES[getDocExt(file.name)]) {
+        toast(`"${file.name}": use PDF, Word, Excel, TXT ou CSV.`, 'err'); continue;
+      }
+      if (file.size > MAX_DOC_SIZE) {
+        toast(`"${file.name}": cada documento deve ter até 10 MB.`, 'err'); continue;
+      }
+      selectedDocFiles.push(file);
+    }
+    render();
+  };
+
+  if (input.form && !input.form.dataset.docResetBound) {
+    input.form.addEventListener('reset', () => { selectedDocFiles = []; render(); });
+    input.form.dataset.docResetBound = '1';
+  }
 }
 
 function bindVideoPreview() {
@@ -244,6 +327,24 @@ function getStorageVideoPaths(description) {
   return [...matches]
     .map(match => match[1].trim())
     .filter(path => validPath.test(path));
+}
+
+// Documentos: [documento-storage: <caminho> | <nome original>]
+function getStorageDocs(description) {
+  const matches = String(description || '').matchAll(/\[documento-storage:\s*([^\]\r\n]+)\]/g);
+  const validPath = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(pdf|docx?|xlsx?|txt|csv)$/i;
+  return [...matches]
+    .map(match => {
+      const [path, ...resto] = match[1].split('|');
+      const p = path.trim();
+      return { path: p, nome: resto.join('|').trim() || p.split('/').pop() };
+    })
+    .filter(d => validPath.test(d.path));
+}
+
+// Nome do arquivo seguro para guardar no marcador (sem colchetes, barras verticais ou quebras de linha)
+function safeDocName(name) {
+  return String(name).replace(/[\[\]|\r\n]/g, ' ').trim().slice(0, 120) || 'documento';
 }
 
 // ─────────────────────────────────────────
@@ -501,10 +602,24 @@ async function openDetalhe(id) {
       }
     }
   };
-  const hasMedia = imagePaths.length || videoPaths.length;
+  const docs = getStorageDocs(c.descricao);
+  const docLinks = [];
+  const hasMedia = imagePaths.length || videoPaths.length || docs.length;
   if (hasMedia) setLoading(true);
   await signAll(imagePaths, imageUrls, 'uma imagem');
   await signAll(videoPaths, videoUrls, 'o vídeo');
+  for (const d of docs) {
+    try {
+      // "download" faz o arquivo baixar com o nome original
+      const { data, error } = await supa.storage
+        .from('chamados-imagens')
+        .createSignedUrl(d.path, 3600, { download: d.nome });
+      if (error) throw error;
+      docLinks.push({ url: data.signedUrl, nome: d.nome });
+    } catch (e) {
+      toast('Não foi possível carregar um documento: ' + e.message, 'err');
+    }
+  }
   if (hasMedia) setLoading(false);
   if (requestId !== detailRequestId) return;
 
@@ -549,7 +664,7 @@ async function openDetalhe(id) {
 
     <div>
       <div class="detail-field-label" style="margin-bottom:6px">Descrição</div>
-      <div class="detail-body">${formatDescricaoHtml(c.descricao, imageUrls, videoUrls)}</div>
+      <div class="detail-body">${formatDescricaoHtml(c.descricao, imageUrls, videoUrls, docLinks)}</div>
     </div>
 
     ${canEditPrio ? `
@@ -643,6 +758,7 @@ async function deleteChamado(id) {
 function initFormNovo() {
   bindImagePreview();
   bindVideoPreview();
+  bindDocPreview();
 
   // Preenche a lista de lojas
   const lojasSel = document.getElementById('c-loja');
@@ -680,6 +796,7 @@ async function submitChamado(ev) {
   const descricao  = document.getElementById('c-descricao').value.trim();
   const imageFiles = [...selectedImageFiles];
   const videoFile = selectedVideoFile;
+  const docFiles = [...selectedDocFiles];
   const maxImages = 5;
   const maxImageSize = 2 * 1024 * 1024;
   const fileExtensions = {
@@ -707,14 +824,20 @@ async function submitChamado(ev) {
     toast('Use um vídeo MP4, WebM ou MOV de até 50 MB.', 'err');
     return;
   }
+  if (docFiles.length > MAX_DOCS
+      || docFiles.some(f => !DOC_TYPES[getDocExt(f.name)] || f.size > MAX_DOC_SIZE)) {
+    toast(`Anexe até ${MAX_DOCS} documentos PDF, Word, Excel, TXT ou CSV de até 10 MB cada.`, 'err');
+    return;
+  }
 
   const btnHtml = btn.innerHTML;
   btn.disabled = true;
 
   const uploadedImagePaths = [];
   let uploadedVideoPath = null;
+  const uploadedDocs = [];
   try {
-    if ((imageFiles.length || videoFile) && !currentUser?.id) {
+    if ((imageFiles.length || videoFile || docFiles.length) && !currentUser?.id) {
       throw new Error('Faça login novamente antes de anexar arquivos.');
     }
     if (imageFiles.length) {
@@ -743,9 +866,21 @@ async function submitChamado(ev) {
       uploadedVideoPath = path;
     }
 
+    for (const [index, docFile] of docFiles.entries()) {
+      btn.textContent = `Enviando documento ${index + 1} de ${docFiles.length}…`;
+      const ext = getDocExt(docFile.name);
+      const path = `${currentUser.id}/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supa.storage
+        .from('chamados-imagens')
+        .upload(path, docFile, { contentType: DOC_TYPES[ext], upsert: false });
+      if (uploadError) throw uploadError;
+      uploadedDocs.push({ path, nome: safeDocName(docFile.name) });
+    }
+
     const marcadores = [
       ...uploadedImagePaths.map(path => `[imagem-storage: ${path}]`),
       ...(uploadedVideoPath ? [`[video-storage: ${uploadedVideoPath}]`] : []),
+      ...uploadedDocs.map(d => `[documento-storage: ${d.path} | ${d.nome}]`),
     ];
     const descricaoFinal = marcadores.length
       ? `${descricao}${descricao ? '\n\n' : ''}${marcadores.join('\n')}`
@@ -767,6 +902,7 @@ async function submitChamado(ev) {
     if (error) throw error;
     uploadedImagePaths.length = 0;
     uploadedVideoPath = null;
+    uploadedDocs.length = 0;
     toast('Chamado aberto com sucesso!', 'ok');
     ev.target.reset();
     const previewWrap = document.getElementById('c-imagem-preview');
@@ -778,7 +914,11 @@ async function submitChamado(ev) {
   } catch (e) {
     console.error('submitChamado:', e);
     // Apaga os arquivos já enviados para não deixar anexos sem chamado
-    const enviados = [...uploadedImagePaths, ...(uploadedVideoPath ? [uploadedVideoPath] : [])];
+    const enviados = [
+      ...uploadedImagePaths,
+      ...(uploadedVideoPath ? [uploadedVideoPath] : []),
+      ...uploadedDocs.map(d => d.path),
+    ];
     if (enviados.length) {
       try {
         const { error: cleanupError } = await supa.storage

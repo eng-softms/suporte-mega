@@ -471,6 +471,16 @@
           <div id="c-video-preview" aria-live="polite" style="display:none;gap:12px;flex-wrap:wrap;margin-top:8px"></div>
         </div>
 
+        <div class="field">
+          <label for="c-documento">Anexar documentos (opcional, até 5; 10 MB cada – PDF, Word, Excel, TXT ou CSV)</label>
+          <input id="c-documento" type="file" multiple hidden
+                 accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/csv">
+          <button type="button" class="btn btn-ghost" id="btn-add-documento" onclick="document.getElementById('c-documento').click()">
+            <span aria-hidden="true">+</span> Adicionar documento
+          </button>
+          <div id="c-documento-preview" aria-live="polite" style="display:none;flex-direction:column;gap:6px;margin-top:8px"></div>
+        </div>
+
         <div style="display:flex;gap:10px">
           <button type="submit" class="btn btn-primary" id="btn-submit-chamado">
             <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M13.5 2L2 8.5l4 1.5 1.5 4L13.5 2z"/></svg>
