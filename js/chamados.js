@@ -473,6 +473,12 @@ async function openDetalhe(id) {
   const isAdmin   = hasAdminAccess();
   const canEdit   = isAdmin;
   const canDelete = isAdmin;
+  // Depois de aberto, só o super administrador altera a prioridade
+  const canEditPrio = isSuperAdmin();
+
+  const prioOptions = Object.keys(PRIO_ORDER).map(p =>
+    `<option value="${p}" ${c.prioridade === p ? 'selected' : ''}>${p}</option>`
+  ).join('');
 
   const statusOptions = STATUS_CHAMADO.map(s =>
     `<option value="${s}" ${c.status === s ? 'selected' : ''}>${s}</option>`
@@ -546,6 +552,16 @@ async function openDetalhe(id) {
       <div class="detail-body">${formatDescricaoHtml(c.descricao, imageUrls, videoUrls)}</div>
     </div>
 
+    ${canEditPrio ? `
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg3);border-radius:var(--radius-sm);padding:12px 14px">
+      <label style="font-size:12px;font-weight:600;color:var(--fg2)">Prioridade:</label>
+      <select id="md-prioridade" style="flex:1;min-width:160px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--fg);padding:6px 10px;font-family:var(--font);font-size:13px;outline:none">
+        ${prioOptions}
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="savePrioridade('${c.id}')">Salvar</button>
+    </div>
+    ` : ''}
+
     ${canEdit ? `
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg3);border-radius:var(--radius-sm);padding:12px 14px">
       <label style="font-size:12px;font-weight:600;color:var(--fg2)">Status:</label>
@@ -581,6 +597,20 @@ async function saveStatus(id) {
       .eq('id', id);
     if (error) throw error;
     toast('Status atualizado!', 'ok');
+    closeModal('modal-detalhe');
+  } catch (e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+async function savePrioridade(id) {
+  if (!isSuperAdmin()) { toast('Somente o super administrador pode alterar a prioridade.', 'err'); return; }
+  const prioridade = document.getElementById('md-prioridade')?.value;
+  if (!prioridade) return;
+  try {
+    const { error } = await supa.from('chamados')
+      .update({ prioridade, atualizado_em: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
+    toast('Prioridade atualizada!', 'ok');
     closeModal('modal-detalhe');
   } catch (e) { toast('Erro: ' + e.message, 'err'); }
 }
@@ -743,6 +773,8 @@ async function submitChamado(ev) {
     if (previewWrap) previewWrap.style.display = 'none';
     if (currentProfile) document.getElementById('c-nome').value = currentProfile.display_name;
     navigate('chamados');
+    // Aviso sobre o prazo de atendimento
+    openModal('modal-chamado-aberto');
   } catch (e) {
     console.error('submitChamado:', e);
     // Apaga os arquivos já enviados para não deixar anexos sem chamado

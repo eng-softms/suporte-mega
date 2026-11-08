@@ -3,7 +3,7 @@
 //  Permite instalar o aplicativo e mantém recursos básicos em cache
 // ═══════════════════════════════════════════════════════
 
-const CACHE_NAME = 'suporte-mega-v18';
+const CACHE_NAME = 'suporte-mega-v20';
 
 // Arquivos que serão armazenados em cache para acesso básico sem conexão
 const ASSETS = [

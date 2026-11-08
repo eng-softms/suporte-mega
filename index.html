@@ -435,6 +435,7 @@
               <option value="Alta">Alta</option>
               <option value="Urgente">Urgente</option>
             </select>
+            <small style="font-size:11px;color:var(--fg3)">Depois de aberto o chamado, a prioridade só pode ser alterada pelo suporte.</small>
           </div>
           <div class="field">
             <label for="c-equipamento">Equipamento</label>
@@ -976,6 +977,31 @@
       </div>
       <button class="btn btn-primary" id="btn-save-profile" onclick="saveProfile()" style="width:100%;justify-content:center">
         Salvar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Janela modal: aviso após abrir um chamado -->
+<div class="modal-overlay" id="modal-chamado-aberto">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <span class="modal-title" style="display:flex;align-items:center;gap:10px">
+        Chamado recebido!
+        <svg class="check-anim" viewBox="0 0 52 52" aria-hidden="true">
+          <circle class="check-anim-circle" cx="26" cy="26" r="24"/>
+          <path class="check-anim-mark" d="M15 27l7 7 15-15"/>
+        </svg>
+      </span>
+      <button class="modal-close" onclick="closeModal('modal-chamado-aberto')">✕</button>
+    </div>
+    <div class="modal-body" style="gap:12px;font-size:14px;line-height:1.6;color:var(--fg2)">
+      <p style="margin:0">Obrigado por entrar em contato! Seu chamado foi registrado e já está na nossa fila de atendimento.</p>
+      <p style="margin:0">O atendimento pode levar <strong>até 48 horas</strong>, de acordo com a quantidade de chamados em aberto, o nível de prioridade de cada um e a disponibilidade do momento.</p>
+      <p style="margin:0">Você pode acompanhar o andamento a qualquer momento na aba <strong>Chamados</strong>.</p>
+      <p style="margin:0">Agradecemos muito a sua paciência e compreensão! 💙</p>
+      <button class="btn btn-primary" onclick="closeModal('modal-chamado-aberto')" style="width:100%;justify-content:center;margin-top:4px">
+        Entendi
       </button>
     </div>
   </div>
