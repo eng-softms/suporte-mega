@@ -44,18 +44,14 @@ function subscribeEquipamentos() {
 // ─────────────────────────────────────────
 // Renderização da tabela
 // ─────────────────────────────────────────
-function renderEquipamentos() {
-  const el = document.getElementById('equip-table-body');
-  if (!el) return;
-
-  // Filtros
+// Equipamentos de acordo com os filtros da tela (também usado na exportação)
+function getFilteredEquipamentos(resp = document.getElementById('ef-responsavel')?.value || '') {
   const busca = (document.getElementById('ef-busca')?.value  || '').toLowerCase();
   const loja  = document.getElementById('ef-loja')?.value    || '';
   const tipo  = document.getElementById('ef-tipo')?.value    || '';
   const stat  = document.getElementById('ef-status')?.value  || '';
-  const resp  = populateResponsavelFilter();
 
-  const list = allEquipamentos.filter(e => {
+  return allEquipamentos.filter(e => {
     if (loja && e.loja   !== loja)   return false;
     if (tipo && e.tipo   !== tipo)   return false;
     if (stat && e.status !== stat)   return false;
@@ -66,6 +62,14 @@ function renderEquipamentos() {
     }
     return true;
   });
+}
+
+function renderEquipamentos() {
+  const el = document.getElementById('equip-table-body');
+  if (!el) return;
+
+  // Atualiza a lista de responsáveis antes de filtrar
+  const list = getFilteredEquipamentos(populateResponsavelFilter());
 
   setText('equip-count', `${list.length} de ${allEquipamentos.length} equipamento(s)`);
 
@@ -99,6 +103,47 @@ function renderEquipamentos() {
         <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteEquip('${e.id}')">Excluir</button>
       </td>
     </tr>`).join('');
+}
+
+// ─────────────────────────────────────────
+// Exportar equipamentos (CSV ou Excel), respeitando os filtros
+// ─────────────────────────────────────────
+async function exportEquipamentos(formato) {
+  const list = getFilteredEquipamentos();
+  if (!list.length) { toast('Nenhum equipamento para exportar.', 'info'); return; }
+
+  const excel  = formato === 'xlsx';
+  const header = [
+    'Série / Patrimônio', 'Tipo', 'Marca', 'Modelo', 'Data de aquisição', 'Loja',
+    'Responsável', 'E-mail do responsável', 'Status', 'Observações', 'Atualizado em',
+  ];
+  const rows = list.map(e => {
+    const aquisicao = e.data_aquisicao ? new Date(`${e.data_aquisicao}T00:00:00`).getTime() : null;
+    return [
+      e.serie || '', e.tipo || '', e.marca || '', e.modelo || '',
+      excel ? excelDate(aquisicao) : fmtDateShort(aquisicao),
+      e.loja || '', e.responsavel || '', e.responsavel_email || '',
+      e.status || '', e.obs || '',
+      excel ? excelDate(e.atualizadoEm) : fmtDate(e.atualizadoEm),
+    ];
+  });
+  const name = `equipamentos_${fileDateStamp()}`;
+
+  try {
+    if (excel) {
+      await downloadXLSX(`${name}.xlsx`, [
+        { name: 'Equipamentos', header, rows,
+          dates: { E: 'dd/mm/yyyy', K: 'dd/mm/yyyy hh:mm' },
+          widths: [20, 20, 16, 22, 14, 20, 24, 28, 14, 40, 17] },
+      ]);
+    } else {
+      downloadCSV(`${name}.csv`, header, rows);
+    }
+    toast(`${list.length} equipamento(s) exportado(s).`, 'ok');
+  } catch (err) {
+    console.error('exportEquipamentos:', err);
+    toast('Erro ao exportar: ' + err.message, 'err');
+  }
 }
 
 // ─────────────────────────────────────────

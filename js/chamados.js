@@ -386,7 +386,7 @@ function getFilteredChamados() {
     if (loja    && c.loja       !== loja)      return false;
     if (periodo && c.criadoEm   && (now - c.criadoEm) > periodo * 86400000) return false;
     if (busca) {
-      const hay = [c.nome, c.contato, c.assunto, c.descricao, c.loja, c.categoria, c.id]
+      const hay = [protocoloChamado(c), c.nome, c.contato, c.assunto, c.descricao, c.loja, c.categoria, c.resolucao, c.id]
         .join(' ').toLowerCase();
       if (!hay.includes(busca)) return false;
     }
@@ -424,6 +424,8 @@ function getSortedFiltered() {
     let va = a[sortField], vb = b[sortField];
     if (sortField === 'prioridade') { va = PRIO_ORDER[va] ?? 99; vb = PRIO_ORDER[vb] ?? 99; }
     if (sortField === 'status')     { va = STATUS_ORDER[va] ?? 99; vb = STATUS_ORDER[vb] ?? 99; }
+    // O protocolo é sequencial pela data de abertura
+    if (sortField === 'protocolo')  { va = a.criadoEm || 0; vb = b.criadoEm || 0; }
     if (va < vb) return sortDir === 'asc' ? -1 : 1;
     if (va > vb) return sortDir === 'asc' ?  1 : -1;
     return 0;
@@ -528,7 +530,7 @@ function renderChamadosTable(list) {
       : `<td>${esc(c.nome)}</td>`;
 
     return `<tr class="row-click" tabindex="0" data-open-id="${c.id}" onclick="openDetalhe('${c.id}')">
-      <td><span style="font-family:var(--mono);font-size:11px;color:var(--fg3)">#${c.id.substring(0,6)}</span></td>
+      <td style="white-space:nowrap"><span style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--fg2)">#${esc(protocoloChamado(c))}</span></td>
       <td class="wrap" style="max-width:220px"><strong>${esc(c.assunto)}</strong><br><small style="color:var(--fg3)">${esc(c.categoria)}</small></td>
       ${colSolicitante}
       <td>${esc(c.loja)}</td>
@@ -628,6 +630,7 @@ async function openDetalhe(id) {
     <div class="detail-header">
       <div style="flex:1">
         <div class="detail-meta">
+          <span class="protocolo-tag" title="Protocolo do atendimento">#${esc(protocoloChamado(c))}</span>
           ${prioBadge(c.prioridade)} ${statusBadge(c.status)}
           <span style="font-size:11px;color:var(--fg3)">Aberto ${fmtRelTime(c.criadoEm)}</span>
         </div>
@@ -675,6 +678,13 @@ async function openDetalhe(id) {
       <div class="detail-body">${formatDescricaoHtml(c.descricao, imageUrls, videoUrls, docLinks)}</div>
     </div>
 
+    ${c.resolucao ? `
+    <div>
+      <div class="detail-field-label" style="margin-bottom:6px">Resolução do problema</div>
+      <div class="detail-body resolucao-body">${esc(c.resolucao)}</div>
+    </div>
+    ` : ''}
+
     ${canEditPrio ? `
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg3);border-radius:var(--radius-sm);padding:12px 14px">
       <label style="font-size:12px;font-weight:600;color:var(--fg2)">Prioridade:</label>
@@ -688,10 +698,15 @@ async function openDetalhe(id) {
     ${canEdit ? `
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg3);border-radius:var(--radius-sm);padding:12px 14px">
       <label style="font-size:12px;font-weight:600;color:var(--fg2)">Status:</label>
-      <select id="md-status" style="flex:1;min-width:160px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--fg);padding:6px 10px;font-family:var(--font);font-size:13px;outline:none">
+      <select id="md-status" onchange="toggleResolucaoBox()" style="flex:1;min-width:160px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--fg);padding:6px 10px;font-family:var(--font);font-size:13px;outline:none">
         ${statusOptions}
       </select>
       <button class="btn btn-primary btn-sm" onclick="saveStatus('${c.id}')">Salvar</button>
+      <div id="md-resolucao-wrap" style="flex-basis:100%;display:none;flex-direction:column;gap:6px">
+        <label for="md-resolucao" style="font-size:12px;font-weight:600;color:var(--fg2)">Resolução do problema <span id="md-resolucao-obrig" style="color:var(--danger)">*</span></label>
+        <textarea id="md-resolucao" class="form-control" rows="4" maxlength="4000"
+                  placeholder="Descreva o que foi feito para resolver (ex.: troca do cabo de rede, reinstalação do driver…)">${esc(c.resolucao || '')}</textarea>
+      </div>
     </div>
     ` : ''}
 
@@ -708,20 +723,53 @@ async function openDetalhe(id) {
     ` : ''}
   `;
 
+  toggleResolucaoBox(false);
   openModal('modal-detalhe');
+}
+
+// Status que pedem a resolução do problema (obrigatória em "Resolvido")
+const STATUS_COM_RESOLUCAO = ['Resolvido', 'Fechado'];
+
+// Mostra a caixa de resolução quando o status escolhido é Resolvido/Fechado
+function toggleResolucaoBox(focus = true) {
+  const status = document.getElementById('md-status')?.value;
+  const wrap   = document.getElementById('md-resolucao-wrap');
+  if (!wrap) return;
+  const show = STATUS_COM_RESOLUCAO.includes(status);
+  wrap.style.display = show ? 'flex' : 'none';
+  const obrig = document.getElementById('md-resolucao-obrig');
+  if (obrig) obrig.style.display = status === 'Resolvido' ? '' : 'none';
+  const txt = document.getElementById('md-resolucao');
+  if (show && focus && txt && !txt.value.trim()) txt.focus();
 }
 
 async function saveStatus(id) {
   const status = document.getElementById('md-status')?.value;
   if (!status) return;
+  const payload = { status, atualizado_em: new Date().toISOString() };
+
+  if (STATUS_COM_RESOLUCAO.includes(status)) {
+    const txt = document.getElementById('md-resolucao');
+    const resolucao = (txt?.value || '').trim();
+    if (status === 'Resolvido' && !resolucao) {
+      toast('Descreva a resolução do problema antes de marcar como resolvido.', 'err');
+      txt?.focus();
+      return;
+    }
+    payload.resolucao = resolucao || null;
+  }
+
   try {
-    const { error } = await supa.from('chamados')
-      .update({ status, atualizado_em: new Date().toISOString() })
-      .eq('id', id);
+    const { error } = await supa.from('chamados').update(payload).eq('id', id);
     if (error) throw error;
     toast('Status atualizado!', 'ok');
     closeModal('modal-detalhe');
-  } catch (e) { toast('Erro: ' + e.message, 'err'); }
+  } catch (e) {
+    const semColuna = /resolucao/i.test(e?.message || '');
+    toast(semColuna
+      ? 'Erro: execute o script supabase-protocolo-resolucao.sql no Supabase para salvar a resolução.'
+      : 'Erro: ' + e.message, 'err');
+  }
 }
 
 // Copia o código do AnyDesk/RustDesk para colar direto no programa
@@ -925,7 +973,8 @@ async function submitChamado(ev) {
     };
 
     btn.textContent = 'Registrando chamado…';
-    const { error } = await supa.from('chamados').insert(payload);
+    // Pede a linha de volta para mostrar o protocolo gerado pelo banco
+    const { data: novo, error } = await supa.from('chamados').insert(payload).select().single();
     if (error) throw error;
     uploadedImagePaths.length = 0;
     uploadedVideoPath = null;
@@ -936,7 +985,12 @@ async function submitChamado(ev) {
     if (previewWrap) previewWrap.style.display = 'none';
     if (currentProfile) document.getElementById('c-nome').value = currentProfile.display_name;
     navigate('chamados');
-    // Aviso sobre o prazo de atendimento
+    // Aviso sobre o prazo de atendimento (com o protocolo, se o banco já gera)
+    const protoBox = document.getElementById('chamado-aberto-protocolo');
+    if (protoBox) {
+      protoBox.style.display = novo?.protocolo ? '' : 'none';
+      setText('chamado-aberto-protocolo-num', novo?.protocolo ? `#${novo.protocolo}` : '');
+    }
     openModal('modal-chamado-aberto');
   } catch (e) {
     console.error('submitChamado:', e);
@@ -966,33 +1020,79 @@ async function submitChamado(ev) {
 }
 
 // ─────────────────────────────────────────
-// Exportar arquivo CSV
+// Exportar chamados (CSV e Excel)
 // ─────────────────────────────────────────
+
+// Descrição sem os marcadores internos de anexos
+function descricaoTexto(c) {
+  return String(c.descricao || '')
+    .replace(/\[(?:imagem|video|documento)-storage:\s*[^\]\r\n]+\]/g, '')
+    .replace(/data:image\/[a-z]+;base64,[A-Za-z0-9+/=]+/ig, '[imagem]')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Monta cabeçalho e linhas da planilha de chamados.
+// excel = true: datas como data do Excel e prazo como número; false: tudo como texto.
+function chamadosTabela(list, excel) {
+  const isAdmin = hasAdminAccess();
+  const header = [
+    'Protocolo', 'Aberto em', 'Última atualização', 'Loja', 'Solicitante',
+    ...(isAdmin ? ['E-mail'] : []),
+    'Contato', 'Categoria', 'Prioridade', 'Status', 'Assunto', 'Equipamento',
+    'Acesso remoto', 'Descrição', 'Resolução', 'Dias até resolver',
+    ...(isAdmin ? ['Observações'] : []),
+  ];
+  const rows = list.map(c => {
+    const concluido = (c.status === 'Resolvido' || c.status === 'Fechado') && c.criadoEm && c.atualizadoEm;
+    const dias = concluido ? Math.round((c.atualizadoEm - c.criadoEm) / 864e5 * 10) / 10 : '';
+    return [
+      protocoloChamado(c),
+      excel ? excelDate(c.criadoEm)     : fmtDate(c.criadoEm),
+      excel ? excelDate(c.atualizadoEm) : fmtDate(c.atualizadoEm),
+      c.loja || '', c.nome || '',
+      ...(isAdmin ? [c.email_abertura || ''] : []),
+      c.contato || '', c.categoria || '', c.prioridade || '', c.status || '',
+      c.assunto || '', c.equipamento || '',
+      c.acesso_remoto_codigo ? `${c.acesso_remoto_tipo ? c.acesso_remoto_tipo + ' ' : ''}${c.acesso_remoto_codigo}` : '',
+      descricaoTexto(c),
+      c.resolucao || '',
+      excel ? dias : String(dias).replace('.', ','),
+      ...(isAdmin ? [c.observacao || ''] : []),
+    ];
+  });
+  // Larguras das colunas no Excel, na mesma ordem do cabeçalho
+  const widths = [
+    13, 17, 17, 18, 24, ...(isAdmin ? [28] : []),
+    16, 18, 11, 18, 36, 20, 20, 60, 60, 10, ...(isAdmin ? [40] : []),
+  ];
+  return { header, rows, widths };
+}
+
+// Planilha de chamados pronta para downloadXLSX
+function chamadosSheet(list, name = 'Chamados') {
+  const { header, rows, widths } = chamadosTabela(list, true);
+  return { name, header, rows, widths, dates: ['B', 'C'] };
+}
+
 async function exportCSV() {
   const list = getSortedFiltered();
   if (!list.length) { toast('Nenhum dado para exportar.', 'info'); return; }
-
-  const isAdmin = hasAdminAccess();
-  const cols    = ['ID','Data','Loja','Solicitante','E-mail','Contato','Categoria','Prioridade','Status','Assunto','Equipamento','Acesso remoto','Descrição'];
-  const rows    = list.map(c => [
-    c.id, fmtDate(c.criadoEm), c.loja, c.nome,
-    isAdmin ? (c.email_abertura || '') : '',
-    c.contato || '', c.categoria, c.prioridade, c.status, c.assunto,
-    c.equipamento || '',
-    c.acesso_remoto_codigo ? `${c.acesso_remoto_tipo ? c.acesso_remoto_tipo + ' ' : ''}${c.acesso_remoto_codigo}` : '',
-    (c.descricao || '').replace(/\n/g, ' ')
-  ].map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
-
-  const csv  = '﻿' + [cols.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  const name = `chamados_${new Date().toISOString().slice(0, 10)}.csv`;
-
-  const url = URL.createObjectURL(blob);
-  const a   = document.createElement('a');
-  a.href = url; a.download = name;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
+  const { header, rows } = chamadosTabela(list, false);
+  downloadCSV(`chamados_${fileDateStamp()}.csv`, header, rows);
   toast(`${list.length} chamados exportados.`, 'ok');
+}
+
+async function exportChamadosExcel() {
+  const list = getSortedFiltered();
+  if (!list.length) { toast('Nenhum dado para exportar.', 'info'); return; }
+  try {
+    await downloadXLSX(`chamados_${fileDateStamp()}.xlsx`, [chamadosSheet(list)]);
+    toast(`${list.length} chamados exportados.`, 'ok');
+  } catch (e) {
+    console.error('exportChamadosExcel:', e);
+    toast('Erro ao exportar: ' + e.message, 'err');
+  }
 }
 
 // ─────────────────────────────────────────

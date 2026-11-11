@@ -7,7 +7,6 @@ const AQUISICAO_BADGE = {
   'Comprado': 'badge-fechado',
   'Cancelado': 'badge-cancelado',
 };
-const XLSX_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
 let allAquisicoes = [];
 
@@ -228,17 +227,7 @@ async function deleteAquisicao(id) {
   }
 }
 
-// ── Exportar para Excel (.xlsx) ──
-function loadXlsxLib() {
-  if (window.XLSX) return Promise.resolve(window.XLSX);
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = XLSX_SRC;
-    script.onload = () => resolve(window.XLSX);
-    script.onerror = () => reject(new Error('não foi possível carregar a biblioteca do Excel'));
-    document.head.appendChild(script);
-  });
-}
+// ── Exportar para Excel (.xlsx) – loadXlsxLib() fica em ui.js ──
 
 async function exportAquisicoesExcel() {
   const items = filteredAquisicoes();

@@ -644,6 +644,14 @@ select { cursor: pointer; }
 /* ── Painel de detalhes ── */
 .detail-header { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
 .detail-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+/* Protocolo do atendimento no topo dos detalhes */
+.protocolo-tag {
+  font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--fg);
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 2px 8px; user-select: all;
+}
+/* Resolução registrada ao concluir o chamado */
+.resolucao-body { border-left: 3px solid var(--success); }
 .detail-body {
   background: var(--bg3); border-radius: var(--radius-sm);
   padding: 14px 16px; font-size: 13.5px; line-height: 1.6;

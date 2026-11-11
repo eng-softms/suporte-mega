@@ -51,13 +51,11 @@ function formatInternetMoney(value) {
   return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-function renderPlanosInternet() {
-  const body = document.getElementById('internet-table-body');
-  if (!body) return;
-
+// Cadastros de acordo com os filtros da tela (também usado na exportação)
+function getFilteredPlanosInternet() {
   const search = (document.getElementById('internet-busca')?.value || '').trim().toLocaleLowerCase('pt-BR');
   const unit = document.getElementById('internet-unidade')?.value || '';
-  const filtered = allPlanosInternet.filter(item => {
+  return allPlanosInternet.filter(item => {
     if (unit && item.unidade !== unit) return false;
     if (!search) return true;
     return [
@@ -65,6 +63,49 @@ function renderPlanosInternet() {
       item.links, item.observacoes, item.uso, item.ip,
     ].some(value => String(value || '').toLocaleLowerCase('pt-BR').includes(search));
   });
+}
+
+// Exporta os cadastros filtrados em CSV ou Excel
+async function exportPlanosInternet(formato) {
+  const list = getFilteredPlanosInternet();
+  if (!list.length) { toast('Nenhum cadastro para exportar.', 'info'); return; }
+
+  const excel  = formato === 'xlsx';
+  const header = ['Unidade', 'Fornecedor', 'Plano', 'Titular', 'Mensalidade', 'Links', 'Observações', 'Uso', 'IP'];
+  const valor  = v => (v === null || v === undefined || v === '') ? '' : Number(v);
+  const rows = list.map(item => [
+    item.unidade || '', item.fornecedor || '', item.plano || '', item.titular || '',
+    excel ? valor(item.valor_mensal) : (valor(item.valor_mensal) === '' ? '' : formatInternetMoney(item.valor_mensal)),
+    item.links || '', item.observacoes || '', item.uso || '', item.ip || '',
+  ]);
+  const name = `internet_lojas_${fileDateStamp()}`;
+
+  try {
+    if (excel) {
+      const total = list.reduce((s, item) => s + (Number(item.valor_mensal) || 0), 0);
+      await downloadXLSX(`${name}.xlsx`, [{
+        name: 'Internet das lojas',
+        header,
+        rows,
+        footer: [['', '', '', 'TOTAL MENSAL', total, '', '', '', '']],
+        money: ['E'],
+        widths: [16, 20, 20, 24, 14, 18, 40, 16, 18],
+      }]);
+    } else {
+      downloadCSV(`${name}.csv`, header, rows);
+    }
+    toast(`${list.length} cadastro(s) exportado(s).`, 'ok');
+  } catch (err) {
+    console.error('exportPlanosInternet:', err);
+    toast('Erro ao exportar: ' + err.message, 'err');
+  }
+}
+
+function renderPlanosInternet() {
+  const body = document.getElementById('internet-table-body');
+  if (!body) return;
+
+  const filtered = getFilteredPlanosInternet();
 
   setText('internet-count', `${filtered.length} de ${allPlanosInternet.length} cadastro(s)`);
   if (!filtered.length) {

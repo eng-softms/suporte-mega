@@ -187,6 +187,90 @@ function setText(id, val) {
   if (el) el.textContent = val;
 }
 
+// ── Exportação de planilhas (CSV e Excel) ──
+const XLSX_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+
+// Carrega a biblioteca do Excel só quando alguém exporta
+function loadXlsxLib() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = XLSX_SRC;
+    script.onload = () => resolve(window.XLSX);
+    script.onerror = () => reject(new Error('não foi possível carregar a biblioteca do Excel'));
+    document.head.appendChild(script);
+  });
+}
+
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// Data/hora (ms) → número de série do Excel no horário local.
+// Calculado à mão para evitar o deslocamento de fuso da biblioteca.
+function excelDate(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const utc = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds());
+  return (utc - Date.UTC(1899, 11, 30)) / 86400000;
+}
+
+// Gera um CSV (com BOM para o Excel abrir os acentos corretamente)
+function downloadCSV(name, header, rows) {
+  const cell = v => `"${String(v ?? '').replace(/\r?\n/g, ' ').replace(/"/g, '""')}"`;
+  const csv  = '﻿' + [header, ...rows].map(r => r.map(cell).join(',')).join('\n');
+  downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), name);
+}
+
+// Gera um .xlsx com uma ou mais abas.
+// sheets: [{ name, header, rows, widths?, money?: ['F'], dates?: ['B'] ou { B: 'dd/mm/yyyy' } }]
+// Nas colunas de "dates" os valores devem vir de excelDate(); padrão: data e hora.
+async function downloadXLSX(name, sheets) {
+  const XLSX = await loadXlsxLib();
+  const wb = XLSX.utils.book_new();
+  sheets.forEach(sh => {
+    const dates = Array.isArray(sh.dates)
+      ? Object.fromEntries(sh.dates.map(col => [col, 'dd/mm/yyyy hh:mm']))
+      : (sh.dates || {});
+    // "footer": linhas de total, fora do autofiltro
+    const footer = sh.footer || [];
+    const ws = XLSX.utils.aoa_to_sheet([sh.header, ...sh.rows, ...footer]);
+    ws['!cols'] = (sh.widths || sh.header.map(h => Math.max(12, String(h).length + 2))).map(wch => ({ wch }));
+    if (sh.rows.length) {
+      ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: sh.rows.length, c: sh.header.length - 1 } }) };
+    }
+    for (let r = 2; r <= sh.rows.length + footer.length + 1; r++) {
+      (sh.money || []).forEach(col => {
+        const c = ws[`${col}${r}`];
+        if (c && c.t === 'n') c.z = '"R$" #,##0.00';
+      });
+      Object.entries(dates).forEach(([col, fmt]) => {
+        const c = ws[`${col}${r}`];
+        if (c && c.t === 'n') c.z = fmt;
+      });
+    }
+    // Nome de aba: máx. 31 caracteres e sem : \ / ? * [ ]
+    XLSX.utils.book_append_sheet(wb, ws, String(sh.name).replace(/[:\\/?*[\]]/g, ' ').slice(0, 31));
+  });
+  XLSX.writeFile(wb, name);
+}
+
+// Data local AAAA-MM-DD para nomes de arquivo
+function fileDateStamp() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Protocolo do chamado (ex.: 2026-00042). Se o script SQL do protocolo
+// ainda não foi executado, usa o início do ID como antes.
+function protocoloChamado(c) {
+  return c?.protocolo || (c?.id ? String(c.id).substring(0, 6) : '');
+}
+
 // ── Indicador de carregamento ──
 function setLoading(on) {
   document.getElementById('loading-indicator').style.display = on ? 'flex' : 'none';

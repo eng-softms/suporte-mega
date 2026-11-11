@@ -333,6 +333,9 @@
             <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M3 2h7l3 3v9H3V2zm6 0v3h3M5 7h6M5 9h6M5 11h4" stroke="currentColor" stroke-width="1" fill="none"/></svg>
             CSV
           </button>
+          <button class="btn btn-ghost" onclick="exportChamadosExcel()">
+            <span aria-hidden="true">⬇</span> Excel
+          </button>
           <button class="btn btn-primary" onclick="navigate('novo')">
             <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a6 6 0 1 1 0 12A6 6 0 0 1 8 2zm.5 3.5h-1V7.5H5.5v1H7.5V10.5h1V8.5H10.5v-1H8.5V5.5z"/></svg>
             Novo
@@ -376,7 +379,7 @@
         <table>
           <thead>
             <tr>
-              <th class="sortable" data-sort="id" onclick="sortBy('id')">#</th>
+              <th class="sortable" data-sort="protocolo" onclick="sortBy('protocolo')">Protocolo</th>
               <th class="sortable" data-sort="assunto" onclick="sortBy('assunto')">Assunto / Categoria</th>
               <th class="sortable" id="th-solicitante" data-sort="nome" onclick="sortBy('nome')">Solicitante</th>
               <th class="sortable" data-sort="loja" onclick="sortBy('loja')">Loja</th>
@@ -511,8 +514,14 @@
     <section class="page" id="page-equipamentos">
       <div class="section-header">
         <span class="section-title">Inventário de Equipamentos</span>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <span style="font-size:12px;color:var(--fg3)" id="equip-count"></span>
+          <button class="btn btn-ghost" onclick="exportEquipamentos('csv')">
+            <span aria-hidden="true">⬇</span> CSV
+          </button>
+          <button class="btn btn-ghost" onclick="exportEquipamentos('xlsx')">
+            <span aria-hidden="true">⬇</span> Excel
+          </button>
           <button class="btn btn-primary" onclick="openNovoEquip()">
             <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M8 2a6 6 0 1 1 0 12A6 6 0 0 1 8 2zm.5 3.5h-1V7.5H5.5v1H7.5V10.5h1V8.5H10.5v-1H8.5V5.5z"/></svg>
             Novo
@@ -562,8 +571,14 @@
     <section class="page" id="page-internet">
       <div class="section-header">
         <span class="section-title">Planos de Internet das Lojas</span>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <span id="internet-count" style="font-size:12px;color:var(--fg3)"></span>
+          <button class="btn btn-ghost" onclick="exportPlanosInternet('csv')">
+            <span aria-hidden="true">⬇</span> CSV
+          </button>
+          <button class="btn btn-ghost" onclick="exportPlanosInternet('xlsx')">
+            <span aria-hidden="true">⬇</span> Excel
+          </button>
           <button class="btn btn-primary superadmin-only" id="btn-novo-internet" onclick="openNovoPlanoInternet()">
             <span aria-hidden="true">+</span> Novo cadastro
           </button>
@@ -774,6 +789,10 @@
           <button class="btn btn-ghost" onclick="exportRelCSV()">
             <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M9 2v5h4l-5 5-5-5h4V2h2zm-7 11h12v1H2v-1z"/></svg>
             CSV
+          </button>
+          <button class="btn btn-ghost" onclick="exportRelExcel()">
+            <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M9 2v5h4l-5 5-5-5h4V2h2zm-7 11h12v1H2v-1z"/></svg>
+            Excel
           </button>
         </div>
       </div>
@@ -1022,6 +1041,10 @@
       <button class="modal-close" onclick="closeModal('modal-chamado-aberto')">✕</button>
     </div>
     <div class="modal-body" style="gap:12px;font-size:14px;line-height:1.6;color:var(--fg2)">
+      <div id="chamado-aberto-protocolo" style="display:none;background:var(--bg3);border-radius:var(--radius-sm);padding:10px 14px;text-align:center">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--fg3)">Protocolo do atendimento</div>
+        <div id="chamado-aberto-protocolo-num" style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--fg)"></div>
+      </div>
       <p style="margin:0">Obrigado por entrar em contato! Seu chamado foi registrado e já está na nossa fila de atendimento.</p>
       <p style="margin:0">O atendimento pode levar <strong>até 48 horas</strong>, de acordo com a quantidade de chamados em aberto, o nível de prioridade de cada um e a disponibilidade do momento.</p>
       <p style="margin:0">Você pode acompanhar o andamento a qualquer momento na aba <strong>Chamados</strong>.</p>
