@@ -281,3 +281,150 @@ function initUI() {
   // Na primeira chamada abre a página inicial; depois reabre a atual já com os dados
   navigate(currentPage || homePage());
 }
+
+// ─────────────────────────────────────────
+// Ordenação das tabelas pelo cabeçalho
+// Vale para todas as tabelas, inclusive as montadas depois pelo JS.
+// Clique no título: crescente → decrescente → ordem original.
+// Reconhece datas (dd/mm/aaaa), valores em R$, números e texto.
+// Uma célula pode definir o próprio valor com data-sort-value.
+// Tabelas com ordenação própria (th com onclick, como Chamados) ficam de fora.
+// ─────────────────────────────────────────
+const tableSortState = {};          // chave da tabela → { col, dir }
+const SORT_SKIP_HEADERS = ['', 'ações'];
+const sortCollator = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
+
+function tableSortKey(table) {
+  const tbody = table.tBodies[0];
+  if (tbody?.id) return tbody.id;
+  const owner = table.parentElement?.closest('[id]');
+  const idx = owner ? [...owner.querySelectorAll('table')].indexOf(table) : 0;
+  return `${owner?.id || 'tabela'}:${idx}`;
+}
+
+// Converte o conteúdo da célula em algo comparável: número ou texto (null = vazio)
+function cellSortValue(td) {
+  if (!td) return null;
+  if (td.dataset.sortValue !== undefined) {
+    const n = Number(td.dataset.sortValue);
+    return td.dataset.sortValue === '' ? null : (Number.isNaN(n) ? td.dataset.sortValue : n);
+  }
+  const txt = td.textContent.replace(/\s+/g, ' ').trim();
+  if (!txt || txt === '–' || txt === '-') return null;
+
+  // Data dd/mm/aaaa (com hora opcional)
+  const d = txt.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:,?\s*(\d{2}):(\d{2}))?/);
+  if (d) return new Date(+d[3], +d[2] - 1, +d[1], +(d[4] || 0), +(d[5] || 0)).getTime();
+
+  // Valor em reais ou número no formato brasileiro (1.234,56)
+  const num = txt.replace(/^R\$\s*/, '');
+  if (/^-?\d{1,3}(\.\d{3})*(,\d+)?$/.test(num) || /^-?\d+(,\d+)?$/.test(num)) {
+    return Number(num.replace(/\./g, '').replace(',', '.'));
+  }
+  return txt;
+}
+
+function compareSortValues(a, b) {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;                 // vazios sempre no fim
+  if (b === null) return -1;
+  const na = typeof a === 'number', nb = typeof b === 'number';
+  if (na && nb) return a - b;
+  if (na !== nb) return na ? -1 : 1;        // números antes de texto
+  return sortCollator.compare(a, b);
+}
+
+// Aplica a ordenação guardada a uma tabela (ou volta à ordem original)
+function applyTableSort(table) {
+  const tbody = table.tBodies[0];
+  if (!tbody) return;
+  const rows = [...tbody.rows];
+  // Linha única de aviso ("Nenhum item…", carregando) não é ordenada
+  if (rows.length < 2 || rows.some(r => [...r.cells].some(c => c.colSpan > 1))) return;
+
+  // Guarda a ordem em que a tabela foi montada
+  rows.forEach((r, i) => { if (r.dataset.origIdx === undefined) r.dataset.origIdx = i; });
+
+  const st = tableSortState[tableSortKey(table)];
+  const items = rows.map(r => ({ r, v: st ? cellSortValue(r.cells[st.col]) : null, o: +r.dataset.origIdx }));
+  items.sort((a, b) => {
+    if (st) {
+      const c = compareSortValues(a.v, b.v);
+      // Vazios ficam no fim nos dois sentidos
+      if (c) return (a.v === null || b.v === null || st.dir === 'asc') ? c : -c;
+    }
+    return a.o - b.o;
+  });
+  if (items.every((it, i) => it.r === rows[i])) return;
+  tbody.append(...items.map(it => it.r));
+}
+
+// Marca os cabeçalhos ordenáveis e mostra a seta da coluna ativa
+function decorateSortableTable(table) {
+  const ths = table.tHead ? [...table.tHead.rows[0]?.cells || []] : [];
+  if (!ths.length || ths.some(th => th.hasAttribute('onclick'))) return false;
+
+  const st = tableSortState[tableSortKey(table)];
+  ths.forEach((th, i) => {
+    if (th.dataset.noSort !== undefined || SORT_SKIP_HEADERS.includes(th.textContent.trim().toLowerCase())) return;
+    if (!th.classList.contains('sortable')) {
+      th.classList.add('sortable');
+      th.tabIndex = 0;
+      th.title = 'Clique para ordenar';
+    }
+    const dir = st && st.col === i ? st.dir : '';
+    th.classList.toggle('sorted-asc',  dir === 'asc');
+    th.classList.toggle('sorted-desc', dir === 'desc');
+    th.setAttribute('aria-sort', dir === 'asc' ? 'ascending' : dir === 'desc' ? 'descending' : 'none');
+  });
+  table.dataset.autoSort = '1';
+  return true;
+}
+
+let tableSortObserver = null;
+
+function refreshTableSorting() {
+  document.querySelectorAll('table').forEach(table => {
+    if (decorateSortableTable(table)) applyTableSort(table);
+  });
+  // Descarta as mudanças feitas pela própria ordenação (evita repetir)
+  tableSortObserver?.takeRecords();
+}
+
+function onSortHeader(th) {
+  const table = th.closest('table');
+  if (!table?.dataset.autoSort || !th.classList.contains('sortable')) return;
+  const key = tableSortKey(table);
+  const col = th.cellIndex;
+  const st  = tableSortState[key];
+  if (!st || st.col !== col) tableSortState[key] = { col, dir: 'asc' };
+  else if (st.dir === 'asc')  st.dir = 'desc';
+  else delete tableSortState[key];          // terceiro clique: ordem original
+  decorateSortableTable(table);
+  applyTableSort(table);
+  tableSortObserver?.takeRecords();
+}
+
+function initTableSorting() {
+  document.addEventListener('click', ev => {
+    const th = ev.target.closest('thead th.sortable');
+    if (th) onSortHeader(th);
+  });
+  document.addEventListener('keydown', ev => {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    const th = ev.target.closest?.('thead th.sortable');
+    if (th && th.closest('table')?.dataset.autoSort) { ev.preventDefault(); onSortHeader(th); }
+  });
+
+  // Reaplica a ordenação sempre que uma tabela é montada ou atualizada
+  let agendado = false;
+  tableSortObserver = new MutationObserver(() => {
+    if (agendado) return;
+    agendado = true;
+    requestAnimationFrame(() => { agendado = false; refreshTableSorting(); });
+  });
+  tableSortObserver.observe(document.body, { childList: true, subtree: true });
+  refreshTableSorting();
+}
+
+initTableSorting();

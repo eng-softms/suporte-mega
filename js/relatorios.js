@@ -145,8 +145,8 @@ function renderRelatorios() {
               <td>${esc(g.cat)}</td>
               <td>${esc(g.loja)}</td>
               <td><strong style="font-variant-numeric:tabular-nums;color:${g.n >= 5 ? 'var(--danger)' : g.n >= 3 ? 'var(--warning)' : 'var(--fg)'}">${g.n}</strong></td>
-              <td>${g.urgentes > 0 ? `<span style="color:var(--danger);font-weight:600">${g.urgentes}</span>` : '–'}</td>
-              <td>${risco}</td>
+              <td data-sort-value="${g.urgentes}">${g.urgentes > 0 ? `<span style="color:var(--danger);font-weight:600">${g.urgentes}</span>` : '–'}</td>
+              <td data-sort-value="${{ 'Baixo': 1, 'Médio': 2, 'Alto': 3 }[g.risco]}">${risco}</td>
             </tr>`;
           }).join('')}</tbody>
         </table>
