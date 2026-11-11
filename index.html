@@ -443,6 +443,22 @@
           </div>
         </div>
 
+        <div class="field-row">
+          <div class="field">
+            <label for="c-remoto-tipo">Acesso remoto (opcional)</label>
+            <select id="c-remoto-tipo">
+              <option value="">Não informar</option>
+              <option value="AnyDesk">AnyDesk</option>
+              <option value="RustDesk">RustDesk</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="c-remoto-codigo">Código de acesso remoto</label>
+            <input id="c-remoto-codigo" type="text" inputmode="numeric" placeholder="Ex.: 123 456 789" maxlength="40" autocomplete="off">
+            <small style="font-size:11px;color:var(--fg3)">O número que aparece no AnyDesk ou RustDesk do computador com problema.</small>
+          </div>
+        </div>
+
         <div class="field">
           <label for="c-assunto">Assunto *</label>
           <input id="c-assunto" type="text" placeholder="Resumo do problema em uma linha" required maxlength="120">

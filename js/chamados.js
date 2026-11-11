@@ -657,6 +657,14 @@ async function openDetalhe(id) {
         <div class="detail-field-val">${esc(c.equipamento || '–')}</div>
       </div>
       <div class="detail-field">
+        <div class="detail-field-label">Acesso remoto</div>
+        <div class="detail-field-val">${c.acesso_remoto_codigo ? `
+          ${esc(c.acesso_remoto_tipo || 'Código')}: <strong style="font-family:monospace;letter-spacing:.04em">${esc(c.acesso_remoto_codigo)}</strong>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:6px;padding:2px 8px"
+                  data-codigo="${esc(c.acesso_remoto_codigo)}" onclick="copiarAcessoRemoto(this)">Copiar</button>
+        ` : '–'}</div>
+      </div>
+      <div class="detail-field">
         <div class="detail-field-label">Última atualização</div>
         <div class="detail-field-val">${fmtDate(c.atualizadoEm)}</div>
       </div>
@@ -714,6 +722,17 @@ async function saveStatus(id) {
     toast('Status atualizado!', 'ok');
     closeModal('modal-detalhe');
   } catch (e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+// Copia o código do AnyDesk/RustDesk para colar direto no programa
+async function copiarAcessoRemoto(btn) {
+  const codigo = btn?.dataset.codigo || '';
+  try {
+    await navigator.clipboard.writeText(codigo.replace(/\s+/g, ''));
+    toast('Código de acesso remoto copiado!', 'ok');
+  } catch {
+    toast('Não foi possível copiar. Código: ' + codigo, 'info');
+  }
 }
 
 async function savePrioridade(id) {
@@ -792,6 +811,8 @@ async function submitChamado(ev) {
   const categoria  = document.getElementById('c-categoria').value;
   const prioridade = document.getElementById('c-prioridade').value;
   const equipamento= document.getElementById('c-equipamento').value;
+  const remotoTipo = document.getElementById('c-remoto-tipo')?.value || '';
+  const remotoCod  = (document.getElementById('c-remoto-codigo')?.value || '').trim();
   const assunto    = document.getElementById('c-assunto').value.trim();
   const descricao  = document.getElementById('c-descricao').value.trim();
   const imageFiles = [...selectedImageFiles];
@@ -808,6 +829,10 @@ async function submitChamado(ev) {
 
   if (!nome || !loja || !categoria || !assunto) {
     toast('Preencha os campos obrigatórios (*).', 'err'); return;
+  }
+  // Código do AnyDesk/RustDesk: números, letras e os símbolos @ . - _ (ex.: 123 456 789 ou nome@ad)
+  if (remotoCod && !/^[\w@.\- ]{3,40}$/.test(remotoCod)) {
+    toast('Código de acesso remoto inválido. Use apenas números e letras (ex.: 123 456 789).', 'err'); return;
   }
 
   if (imageFiles.length > maxImages) {
@@ -891,6 +916,8 @@ async function submitChamado(ev) {
       email_abertura: currentUser?.email || null,
       nome, contato, loja, categoria, prioridade,
       equipamento: equipamento || null,
+      acesso_remoto_tipo:   remotoCod ? (remotoTipo || null) : null,
+      acesso_remoto_codigo: remotoCod || null,
       assunto, descricao: descricaoFinal,
       status:       'Aberto',
       criado_em:    now,
@@ -946,12 +973,14 @@ async function exportCSV() {
   if (!list.length) { toast('Nenhum dado para exportar.', 'info'); return; }
 
   const isAdmin = hasAdminAccess();
-  const cols    = ['ID','Data','Loja','Solicitante','E-mail','Contato','Categoria','Prioridade','Status','Assunto','Equipamento','Descrição'];
+  const cols    = ['ID','Data','Loja','Solicitante','E-mail','Contato','Categoria','Prioridade','Status','Assunto','Equipamento','Acesso remoto','Descrição'];
   const rows    = list.map(c => [
     c.id, fmtDate(c.criadoEm), c.loja, c.nome,
     isAdmin ? (c.email_abertura || '') : '',
     c.contato || '', c.categoria, c.prioridade, c.status, c.assunto,
-    c.equipamento || '', (c.descricao || '').replace(/\n/g, ' ')
+    c.equipamento || '',
+    c.acesso_remoto_codigo ? `${c.acesso_remoto_tipo ? c.acesso_remoto_tipo + ' ' : ''}${c.acesso_remoto_codigo}` : '',
+    (c.descricao || '').replace(/\n/g, ' ')
   ].map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
 
   const csv  = '﻿' + [cols.join(','), ...rows].join('\n');
