@@ -1,9 +1,46 @@
 /* ═══════════════════════════════════════════
    SUPORTE MEGA – Folha de estilos
+   ═══════════════════════════════════════════
+
+   O que é este arquivo:
+   O CSS define a APARÊNCIA do sistema: cores, tamanhos, espaçamentos,
+   animações e como a tela se adapta ao celular. O index.html carrega
+   este arquivo uma única vez, e ele vale para todas as telas.
+
+   Como ler:
+   - Um "seletor" (ex.: .btn) escolhe quais elementos recebem o estilo.
+     Ponto (.) = classe; cerquilha (#) = id.
+   - "Variáveis" (ex.: --bg, --accent) guardam valores reutilizados.
+     São lidas com var(--nome). Trocar a variável troca a cor em todo
+     o sistema de uma vez; é assim que funcionam os temas claro/escuro.
+
+   Ordem das seções neste arquivo:
+     1. Variáveis de design e temas (escuro, claro, cores de gráficos)
+     2. Regras básicas (reset) e fundo animado
+     3. Estrutura: barra lateral, barra do topo, páginas
+     4. Componentes: cartões, indicadores, botões, filtros, gráficos,
+        tabelas, badges, janelas modais, formulários, detalhes
+     5. Notificações (toasts), carregamento, tela de login, menu do
+        usuário, faixas de aviso, linha do tempo
+     6. Animações, foco pelo teclado e acessibilidade
+     7. Responsividade (ajustes para tablet e celular), sempre no fim,
+        para poder sobrescrever as regras anteriores
    ═══════════════════════════════════════════ */
 
 /* ── Variáveis de design ── */
 /* Tema escuro (padrão): painel futurista estilo HUD */
+/* HUD ("heads-up display") é o visual de painel de nave/jogo, com
+   linhas neon e cantos marcados. ":root" é a raiz da página (a tag
+   <html>); as variáveis declaradas aqui valem para a página inteira.
+   Significado das principais:
+     --bg, --bg2, --bg3  fundos (do mais escuro ao mais claro)
+     --border            cor das bordas
+     --fg, --fg2, --fg3  cores de texto (principal, secundário, apagado)
+     --accent, --accent2 cor de destaque (azul) e sua variação
+     --neon              ciano brilhante dos detalhes de HUD
+     --success, --warning, --danger, --info  verde, amarelo, vermelho, azul claro
+   Números como rgba(10, 21, 44, .68) são cores com transparência:
+   vermelho, verde, azul e opacidade (0 = invisível, 1 = sólido). */
 :root {
   --bg:        #050b18;
   --bg2:       #0c1730;
@@ -26,6 +63,9 @@
   --glass:        rgba(7, 15, 32, .72);
   --side-bg:      linear-gradient(180deg, rgba(10, 21, 44, .92) 0%, rgba(5, 11, 24, .92) 100%);
   /* Camadas do fundo */
+  /* --fx-base: manchas de luz (gradientes radiais) sobre um degradê
+     escuro. --fx-grid-line, --fx-wave-*, --fx-dots: cores da grade,
+     das ondas neon e da trama de pontos do fundo animado. */
   --fx-base:
     radial-gradient(1100px 600px at 78% -12%, rgba(79,140,255,.28), transparent 60%),
     radial-gradient(900px 560px at -8% 105%, rgba(124,58,237,.22), transparent 60%),
@@ -36,27 +76,49 @@
   --fx-wave-2:    #6366f1;
   --fx-wave-op:   .55;
   --fx-dots:      rgba(140, 190, 255, .10);
+  /* Cores do logotipo em SVG (texto, contorno, faixa e brilho) */
   --logo-t1:      #ffffff;
   --logo-t2:      #22d3ee;
   --logo-stroke:  #0b1d44;
   --logo-b1:      #3b6fe0;
   --logo-b2:      #6366f1;
   --logo-glow:    rgba(34, 211, 238, .35);
+  /* Fontes: texto comum, títulos, números grandes e código.
+     Os nomes seguintes são alternativas caso a primeira não carregue. */
   --font:      'Inter', system-ui, sans-serif;
   --display:   'Exo 2', 'Inter', system-ui, sans-serif;
   --digits:    'Orbitron', 'Exo 2', system-ui, sans-serif;
   --mono:      'JetBrains Mono', monospace;
+  /* Medidas: largura da barra lateral e arredondamento dos cantos */
   --sidebar-w: 220px;
   --radius:    10px;
   --radius-sm: 6px;
+  /* --ease: curva de aceleração das animações (começa rápido e
+     desacelera no fim, dando sensação suave). */
   --ease:      cubic-bezier(.2, .8, .2, 1);
+  /* Sombras (normal e grande) e o "anel" de foco do teclado.
+     color-mix mistura duas cores: aqui, 35% da cor de destaque com
+     transparente, gerando um azul translúcido. */
   --shadow:    0 1px 2px rgba(0,0,0,.35), 0 6px 22px rgba(0,8,30,.35);
   --shadow-lg: 0 10px 34px rgba(0,8,30,.55);
   --ring:      0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+  /* Avisa o navegador que o tema é escuro (barras de rolagem e campos
+     nativos ficam escuros também). */
   color-scheme: dark;
 }
 
 /* Tema claro: versão "blueprint" */
+/* Como os temas funcionam (três blocos com as mesmas variáveis):
+   1) Este @media vale quando o sistema operacional do usuário está no
+      modo claro, MAS só se ele não escolheu "escuro" no botão de tema
+      (:not([data-theme="dark"])).
+   2) :root[data-theme="light"] logo abaixo: o usuário escolheu "claro"
+      no botão (ui.js coloca data-theme="light" na tag <html>).
+   3) :root[data-theme="dark"]: o usuário escolheu "escuro", mesmo com o
+      sistema no modo claro.
+   Os valores aparecem repetidos porque o CSS não permite reaproveitar
+   um bloco de variáveis em dois seletores diferentes de forma simples.
+   Ao mudar uma cor, mude nos dois lugares correspondentes. */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     --bg:      #e6edf8;
@@ -94,6 +156,7 @@
     color-scheme: light;
   }
 }
+/* Tema claro escolhido manualmente no botão de tema (cópia do bloco acima) */
 :root[data-theme="light"] {
   --bg:      #e6edf8;
   --bg2:     #f8fbff;
@@ -129,6 +192,8 @@
   --shadow-lg: 0 10px 30px rgba(20,40,90,.16);
   color-scheme: light;
 }
+/* Tema escuro escolhido manualmente (cópia do :root do início). Precisa
+   existir para vencer o @media do modo claro do sistema. */
 :root[data-theme="dark"] {
   --bg:        #050b18;
   --bg2:       #0c1730;
@@ -167,6 +232,9 @@
 }
 
 /* ── Cores das fatias dos gráficos (ordem fixa; escuro por padrão, claro abaixo) ── */
+/* Usadas nos gráficos de pizza da página Relatórios (relatorios.js).
+   A 1ª fatia sempre usa --series-1, a 2ª --series-2, e assim por diante.
+   Segue a mesma lógica de temas explicada acima. */
 :root {
   --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
   --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
@@ -182,8 +250,14 @@
   --series-5: #e87ba4; --series-6: #008300; --series-7: #6250d6; --series-8: #e34948;
 }
 
+/* ── Regras básicas ("reset") ── */
+/* Vale para todos os elementos. box-sizing: border-box faz a largura
+   informada já incluir borda e espaçamento interno (fica mais fácil
+   calcular). margin: 0 tira as margens padrão do navegador. */
 *, *::before, *::after { box-sizing: border-box; margin: 0; }
 
+/* Corpo da página. Os "safe-area-inset" respeitam o entalhe (notch) e
+   as bordas arredondadas da tela de alguns celulares, como o iPhone. */
 body {
   font-family: var(--font);
   background: var(--bg);
@@ -197,12 +271,20 @@ body {
 }
 
 /* ── Fundo futurista (camadas fixas atrás de tudo) ── */
+/* .bg-fx é uma camada que cobre a tela inteira (position: fixed;
+   inset: 0) e fica atrás do conteúdo (z-index: 0). pointer-events: none
+   faz os cliques "atravessarem" o fundo. As camadas internas (grade,
+   ondas, brilho) estão no início do <body> no index.html. */
 .bg-fx {
   position: fixed; inset: 0; z-index: 0;
   pointer-events: none; overflow: hidden;
   background: var(--fx-base);
 }
 /* Trama de pontos no alto, sumindo para baixo */
+/* ::before cria um elemento "de enfeite" sem precisar de HTML.
+   A "máscara" (mask-image) com degradê vai apagando os pontos de cima
+   para baixo. O prefixo -webkit- é a versão para Safari e navegadores
+   mais antigos. */
 .bg-fx::before {
   content: ''; position: absolute; inset: 0;
   background-image: radial-gradient(var(--fx-dots) 1px, transparent 1.3px);
@@ -211,6 +293,10 @@ body {
           mask-image: linear-gradient(180deg, #000 0%, transparent 70%);
 }
 /* Grade em perspectiva no "chão" */
+/* rotateX + perspective "deitam" a grade, como um piso visto de frente.
+   As linhas são desenhadas com dois degradês (horizontal e vertical).
+   A animação gridDrift desloca a grade 64px (o tamanho de um quadrado)
+   e recomeça; como o quadrado se repete, parece um movimento sem fim. */
 .fx-grid {
   position: absolute; left: -60%; right: -60%; bottom: 0; height: 46%;
   transform: perspective(360px) rotateX(52deg); transform-origin: 50% 100%;
@@ -228,6 +314,9 @@ body {
 }
 @keyframes gridDrift { to { transform: translateY(64px); } }
 /* Ondas de linhas neon (o desenho vem do SVG; a cor, do tema) */
+/* Truque: a camada é pintada com um degradê colorido e o arquivo
+   img/bg-waves.svg serve de "molde" (máscara). Só aparece a cor onde o
+   SVG tem desenho. Assim a cor muda com o tema sem editar o SVG. */
 .fx-waves {
   position: absolute; inset: 0;
   background: linear-gradient(100deg, var(--fx-wave-1) 0%, var(--fx-wave-2) 55%, var(--fx-wave-1) 100%);
@@ -242,6 +331,11 @@ body {
 }
 
 /* ── Cantos de mira (HUD) para painéis ── */
+/* Desenha pequenos "L" coloridos no canto superior esquerdo e no
+   inferior direito de cartões, caixa de login e janelas modais.
+   Cada linear-gradient(...) 0 0 / 16px 2px é um traço fino de 16px por
+   2px, posicionado num canto. A última camada, var(--panel), é a cor
+   de fundo do painel. */
 .card, .login-box, .modal {
   background:
     linear-gradient(var(--hud) 0 0) 0 0 / 16px 2px no-repeat,
@@ -252,9 +346,15 @@ body {
 }
 
 /* ── Estrutura do aplicativo ── */
+/* .app envolve barra lateral + conteúdo. "display: flex" coloca os
+   filhos lado a lado. z-index: 1 deixa tudo acima do fundo animado. */
 .app { display: flex; min-height: 100vh; position: relative; z-index: 1; }
 
 /* ── Barra lateral ── */
+/* Menu fixo à esquerda (position: fixed), com efeito de vidro fosco
+   (backdrop-filter: blur borra o que está atrás). A "transition" em
+   transform é o que faz o menu deslizar ao abrir no celular (ver a
+   seção de responsividade no fim). */
 .sidebar {
   width: var(--sidebar-w);
   background: var(--side-bg);
@@ -274,6 +374,7 @@ body {
   padding: 20px 16px 14px;
   border-bottom: 1px solid var(--panel-border);
 }
+/* Linha neon brilhante embaixo do logotipo */
 .sidebar-logo::after {
   content: ''; position: absolute; left: 16px; right: 16px; bottom: -1px; height: 1px;
   background: linear-gradient(90deg, var(--neon), transparent);
@@ -287,6 +388,10 @@ body {
 .sidebar-logo .sub   { font-size: 11px; color: var(--fg3); margin-top: 2px; }
 
 /* ── Logo Mega Feirão (SVG que acompanha o tema) ── */
+/* O logotipo é um SVG (imagem feita de código) dentro do index.html.
+   Por isso suas cores podem vir das variáveis --logo-*. paint-order:
+   stroke desenha o contorno por baixo do preenchimento, deixando as
+   letras mais legíveis. */
 .mega-logo {
   display: block; width: 100%; height: auto; overflow: visible;
   filter: drop-shadow(0 0 10px var(--logo-glow));
@@ -309,6 +414,10 @@ body {
 }
 .login-logo .mega-logo { max-width: 300px; margin: 0 auto 6px; }
 
+/* Itens do menu lateral (.nav-item). Grupos com título (.nav-label).
+   O ::before é a barrinha vertical à esquerda: tem altura 0 e cresce
+   até 60% quando o item fica ativo (.active), com brilho neon.
+   .nav-badge é o contador redondo à direita (ex.: chamados abertos). */
 .nav-section { padding: 12px 8px 4px; }
 .nav-label {
   font-size: 10px; font-weight: 600; color: var(--fg3);
@@ -347,6 +456,8 @@ body {
   box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
+/* Rodapé da barra lateral. margin-top: auto empurra para o fim.
+   .theme-toggle é o botão de tema (o ícone gira ao passar o mouse). */
 .sidebar-footer { margin-top: auto; padding: 12px; border-top: 1px solid var(--panel-border); display: flex; flex-direction: column; gap: 6px; }
 .theme-toggle {
   position: relative; overflow: hidden;
@@ -361,6 +472,8 @@ body {
 .theme-toggle:hover svg { transform: rotate(180deg); }
 
 /* ── Conteúdo principal ── */
+/* Área à direita do menu. A margem esquerda do tamanho da barra lateral
+   evita que o conteúdo fique escondido embaixo dela. */
 .main {
   margin-left: var(--sidebar-w);
   flex: 1;
@@ -369,6 +482,8 @@ body {
   min-height: 100vh;
 }
 
+/* Barra do topo (título da página e menu do usuário).
+   position: sticky a mantém grudada no alto ao rolar a página. */
 .topbar {
   background: var(--glass);
   backdrop-filter: blur(12px) saturate(1.4); -webkit-backdrop-filter: blur(12px) saturate(1.4);
@@ -390,6 +505,8 @@ body {
   letter-spacing: .04em; text-transform: uppercase;
 }
 .topbar-spacer { flex: 1; }
+/* Botão "hambúrguer" (☰) que abre o menu. Escondido no computador;
+   aparece no celular (ver responsividade). */
 .hamburger {
   display: none; background: none; border: none; cursor: pointer; padding: 6px;
   color: var(--fg); border-radius: var(--radius-sm); transition: background .15s, transform .12s var(--ease);
@@ -397,11 +514,16 @@ body {
 .hamburger:hover  { background: var(--bg3); }
 .hamburger:active { transform: scale(.9); }
 
+/* Páginas: todas escondidas; só a que tem .active aparece (a função
+   navigate() do ui.js troca essa classe). pageIn é a animação de
+   entrada: surge subindo 6px e ficando visível. */
 .page { display: none; flex-direction: column; gap: 24px; padding: 24px; flex: 1; }
 .page.active { display: flex; animation: pageIn .28s var(--ease); }
 @keyframes pageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* ── Cartões ── */
+/* Caixas que agrupam conteúdo. .dash-grid divide o painel inicial em
+   duas colunas iguais (1fr 1fr = uma fração do espaço para cada). */
 .card {
   border: 1px solid var(--panel-border);
   border-radius: var(--radius); padding: 16px;
@@ -411,6 +533,11 @@ body {
 .dash-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
 /* ── Linha de indicadores ── */
+/* Os cartões de números do painel (ex.: "Abertos", "Em andamento").
+   --tone é uma variável local: cada cartão define sua cor (.warning,
+   .danger...) e todo o resto (brilho, borda, número) usa essa cor.
+   Os cartões .clickable levantam ao passar o mouse e levam à página
+   correspondente. .bump é a animação de "pulo" quando o número muda. */
 .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .stat-card {
   --tone: var(--accent);
@@ -464,6 +591,12 @@ body {
 .section-title  { font-family: var(--display); font-size: 16px; font-weight: 600; letter-spacing: .02em; flex: 1; }
 
 /* ── Botões ── */
+/* .btn é a base de todo botão. As variações mudam a cor:
+   .btn-primary (azul, ação principal), .btn-ghost (discreto, com borda),
+   .btn-danger (vermelho, excluir), .btn-success (verde), .btn-sm (menor).
+   ":hover" = mouse em cima; ":active" = sendo pressionado;
+   ":not(:disabled)" = só se o botão não estiver desativado.
+   overflow: hidden prende o efeito de onda (ripple) dentro do botão. */
 .btn {
   position: relative; overflow: hidden;
   display: inline-flex; align-items: center; gap: 6px;
@@ -490,6 +623,8 @@ body {
 .btn svg     { width: 14px; height: 14px; }
 
 /* ── Barra de filtros ── */
+/* Faixa com busca e listas de seleção acima das tabelas.
+   flex-wrap: wrap deixa os campos quebrarem de linha em telas estreitas. */
 .filters-bar {
   display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
   background: var(--panel); border: 1px solid var(--panel-border);
@@ -507,6 +642,8 @@ body {
 .filter-select { min-width: 120px; }
 
 /* ── Seletor do tipo de gráfico (Relatórios) ── */
+/* Botões "segmentados": um grupo de botões grudados em que só um
+   fica marcado (.active) por vez. */
 .seg {
   display: inline-flex; gap: 2px; padding: 2px;
   background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm);
@@ -521,6 +658,11 @@ body {
 .seg button.active { background: var(--bg2); color: var(--fg); box-shadow: var(--shadow); }
 
 /* ── Gráfico de pizza (rosca) ── */
+/* O gráfico é um SVG desenhado pelo relatorios.js; cada fatia é um
+   <path>. Ao passar o mouse no gráfico, todas as fatias ficam apagadas
+   e só a fatia sob o mouse fica forte e um pouco maior.
+   A legenda fica ao lado. tabular-nums deixa todos os algarismos com a
+   mesma largura, para os números ficarem alinhados. */
 .pie-wrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .pie-svg  { width: 150px; height: 150px; flex-shrink: 0; overflow: visible; }
 .pie-svg path { stroke: var(--bg2); stroke-width: 2; transition: opacity .15s, transform .15s var(--ease); transform-origin: 50% 50%; }
@@ -534,10 +676,14 @@ body {
 .pie-legend-lbl { flex: 1; color: var(--fg2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pie-legend-val { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
 .pie-legend-pct { color: var(--fg3); width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
+/* Continuação da barra de filtros: campo em foco e texto de exemplo */
 .filter-input:focus, .filter-select:focus  { border-color: var(--accent); }
 .filter-input::placeholder { color: var(--fg3); }
 
 /* ── Tabela ── */
+/* .table-wrap envolve a tabela e cria rolagem horizontal (overflow-x)
+   quando ela é mais larga que a tela, comum no celular.
+   thead = cabeçalho; tbody = linhas de dados; tfoot = rodapé (totais). */
 .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--panel-border); background: var(--panel); box-shadow: var(--shadow); }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 thead th {
@@ -546,6 +692,9 @@ thead th {
   font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
   border-bottom: 1px solid color-mix(in srgb, var(--neon) 30%, var(--border)); white-space: nowrap;
 }
+/* Títulos de coluna ordenáveis (a classe "sortable" é posta pelo ui.js).
+   O ::after mostra a seta: ↕ apagada quando não ordenada, ▲ crescente,
+   ▼ decrescente. */
 thead th.sortable { cursor: pointer; user-select: none; transition: color .15s, background .15s; }
 thead th.sortable:hover { color: var(--fg); background: color-mix(in srgb, var(--accent) 8%, var(--bg3)); }
 thead th.sortable::after { content: '↕'; margin-left: 6px; opacity: .3; font-size: 10px; }
@@ -559,6 +708,9 @@ tbody tr {
 }
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: var(--bg3); }
+/* Linhas clicáveis (.row-click) abrem detalhes. Ao passar o mouse
+   ganham uma faixa azul à esquerda (sombra "inset", ou seja, interna).
+   :focus-visible é o destaque de quem chega na linha pelo teclado. */
 tbody tr.row-click { cursor: pointer; }
 tbody tr.row-click:hover { box-shadow: inset 3px 0 0 var(--accent); }
 tbody tr.row-click:active { background: color-mix(in srgb, var(--accent) 12%, var(--bg3)); }
@@ -568,6 +720,11 @@ tbody td.wrap { white-space: normal; word-break: break-word; }
 tfoot tr { border-top: 2px solid var(--border); background: var(--bg3); }
 
 /* ── Selos / etiquetas ── */
+/* "Badges": as etiquetas arredondadas de status e prioridade, criadas
+   por statusBadge() e prioBadge() no ui.js.
+   Padrão usado: fundo = color-mix(cor 18% + transparente), ou seja, a
+   mesma cor do texto bem clarinha. Assim o selo funciona nos dois temas
+   sem precisar de uma cor de fundo separada. */
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 99px;
@@ -583,6 +740,13 @@ tfoot tr { border-top: 2px solid var(--border); background: var(--bg3); }
 .badge-baixa     { background: color-mix(in srgb, var(--fg3)     18%, transparent); color: var(--fg3); }
 
 /* ── Janela modal ── */
+/* .modal-overlay é o fundo escuro que cobre a tela; .modal é a caixa.
+   Fechada: fica invisível (opacity: 0) e não recebe cliques
+   (pointer-events: none). Aberta (.open, colocada por openModal() no
+   ui.js): aparece com transição suave e a caixa "sobe" um pouco.
+   z-index: 200 deixa a janela acima da barra lateral (100) e do topo (50).
+   max-height: 90vh + overflow-y: auto: se o conteúdo for grande, rola
+   dentro da janela (vh = porcentagem da altura da tela). */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(2,6,18,.70);
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
@@ -616,6 +780,9 @@ tfoot tr { border-top: 2px solid var(--border); background: var(--bg3); }
 .modal-body { padding: 16px 24px 24px; display: flex; flex-direction: column; gap: 14px; }
 
 /* ── Elementos do formulário ── */
+/* Dois padrões equivalentes de campo: .form-group/.form-control e
+   .field (rótulo + campo). .field-row e .field-row-3 colocam 2 ou 3
+   campos lado a lado (viram 1 coluna no celular). */
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-label { font-size: 12px; font-weight: 600; color: var(--fg2); letter-spacing: .02em; }
 .form-control {
@@ -642,6 +809,7 @@ tfoot tr { border-top: 2px solid var(--border); background: var(--bg3); }
 select { cursor: pointer; }
 
 /* ── Painel de detalhes ── */
+/* Conteúdo da janela "Detalhes do chamado" (montado pelo chamados.js). */
 .detail-header { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
 .detail-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 /* Protocolo do atendimento no topo dos detalhes */
@@ -652,6 +820,8 @@ select { cursor: pointer; }
 }
 /* Resolução registrada ao concluir o chamado */
 .resolucao-body { border-left: 3px solid var(--success); }
+/* Texto da descrição. pre-wrap mantém as quebras de linha digitadas
+   pelo usuário; break-word quebra palavras muito longas (ex.: links). */
 .detail-body {
   background: var(--bg3); border-radius: var(--radius-sm);
   padding: 14px 16px; font-size: 13.5px; line-height: 1.6;
@@ -663,6 +833,8 @@ select { cursor: pointer; }
 .detail-field-val { font-size: 13px; margin-top: 2px; }
 
 /* ── Lista de chamados recentes ── */
+/* Lista do painel inicial. text-overflow: ellipsis corta títulos
+   longos com "..." em vez de quebrar a linha. */
 .recent-item {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 10px; margin: 0 -10px;
@@ -677,6 +849,7 @@ select { cursor: pointer; }
 .recent-meta  { font-size: 11px; color: var(--fg3); }
 
 /* ── Estado vazio ── */
+/* Mensagem com ícone mostrada quando uma lista não tem itens. */
 .empty-state {
   text-align: center; padding: 48px 24px; color: var(--fg3);
   display: flex; flex-direction: column; align-items: center; gap: 12px;
@@ -685,6 +858,12 @@ select { cursor: pointer; }
 .empty-state p { font-size: 14px; }
 
 /* ── Notificações ── */
+/* Mensagens rápidas ("toasts") no canto inferior direito, criadas pela
+   função toast() do ui.js. Entram deslizando (slideIn) e saem com a
+   classe .hide (slideOut). "forwards" mantém o estado final da
+   animação (invisível) até o elemento ser removido. A faixa colorida à
+   esquerda indica o tipo: verde (ok), vermelho (err), azul (info).
+   z-index: 400 deixa as mensagens acima até das janelas modais. */
 .toast-container {
   position: fixed; bottom: 24px; right: 24px; z-index: 400;
   display: flex; flex-direction: column; gap: 8px;
@@ -706,6 +885,8 @@ select { cursor: pointer; }
 @keyframes slideOut { to { transform: translateX(40px); opacity: 0; } }
 
 /* ── Carregamento / indicador ── */
+/* .spinner é o círculo girando: uma borda cinza com só o lado de cima
+   colorido, girando sem parar (animação spin). */
 .spinner {
   width: 18px; height: 18px; border: 2px solid var(--border);
   border-top-color: var(--accent); border-radius: 50%;
@@ -720,6 +901,11 @@ select { cursor: pointer; }
 .loading-indicator { display: flex; align-items: center; gap: 8px; }
 
 /* ── Carregamento inicial (antes de saber se há sessão) ── */
+/* Enquanto o sistema verifica se o usuário já está logado, a tag
+   <html> tem a classe "booting". Nesse momento aparece só a tela de
+   carregamento, e a tela de login e o aplicativo ficam escondidos.
+   Isso evita a tela de login "piscar" para quem já está logado.
+   !important força a regra a vencer qualquer outra. */
 .boot-screen {
   display: none; position: fixed; inset: 0; z-index: 1000;
   flex-direction: column; align-items: center; justify-content: center; gap: 12px;
@@ -731,6 +917,9 @@ select { cursor: pointer; }
 .booting #app-root { display: none !important; }
 
 /* ── Tela de acesso ── */
+/* Tela de login: cobre a tela toda (position: fixed; inset: 0) e
+   centraliza a caixa (.login-box). As abas (.login-tab) alternam
+   entre "Entrar" e "Criar conta". */
 .login-screen {
   position: fixed; inset: 0; z-index: 999;
   background: transparent;
@@ -767,9 +956,15 @@ select { cursor: pointer; }
 .login-tab:active { transform: scale(.97); }
 .login-tab.active { background: var(--bg2); color: var(--fg); box-shadow: var(--shadow); }
 /* Equipamentos, aquisições e edição da internet: somente super administrador */
+/* Elementos com a classe "superadmin-only" ficam escondidos, a menos
+   que a tag <html> tenha a classe "is-superadmin" (colocada pelo
+   auth.js após o login do super administrador). */
 :root:not(.is-superadmin) .superadmin-only { display: none !important; }
 
 /* ── Convite de instalação do aplicativo ── */
+/* Janela que convida a instalar o sistema como aplicativo no celular
+   ou computador (PWA, controlada pelo install.js). Os itens da lista
+   ganham um "✓" verde via ::before. */
 .install-icon {
   border-radius: 22px;
   box-shadow: 0 8px 28px rgba(0, 8, 30, .5), 0 0 32px color-mix(in srgb, var(--neon) 22%, transparent);
@@ -789,6 +984,10 @@ select { cursor: pointer; }
 }
 .install-hint { font-size: 12px; color: var(--fg3); margin: 0; line-height: 1.5; }
 
+/* Caixa de confirmação (ex.: e-mail confirmado ou erro na confirmação)
+   com ícone redondo verde; .confirm-icon.err deixa o ícone vermelho.
+   Em seguida: link de texto, mensagem de erro (.login-err) e aviso
+   (.login-note), que só aparecem quando ganham a classe .show. */
 .confirm-box {flex-direction: column; align-items: center; gap: 14px; text-align: center; }
 .confirm-icon {
   width: 64px; height: 64px; border-radius: 50%;
@@ -825,6 +1024,9 @@ select { cursor: pointer; }
 .login-note.show { display: block; }
 
 /* ── Menu do usuário na barra superior ── */
+/* Botão com o avatar (iniciais) e o menu suspenso (dropdown) com
+   opções como "Sair". O menu abre com a classe .open (auth.js). Quando
+   aberto, aria-expanded="true" e a setinha do botão gira 180 graus. */
 .user-menu-wrap { position: relative; }
 .user-menu-btn {
   display: flex; align-items: center; gap: 8px;
@@ -873,6 +1075,8 @@ select { cursor: pointer; }
 .user-dropdown-sep { height: 1px; background: var(--border); margin: 4px 0; }
 
 /* ── Selos de perfil ── */
+/* Etiqueta do tipo de usuário na página Usuários: super administrador
+   (laranja), administrador (azul) e usuário comum (cinza). */
 .role-badge {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600;
@@ -882,6 +1086,8 @@ select { cursor: pointer; }
 .role-user  { background: color-mix(in srgb, var(--fg3)   18%, transparent); color: var(--fg3); }
 
 /* ── Faixa informativa ── */
+/* Caixas de aviso dentro das telas: azul (informação) e amarela
+   (atenção, como o aviso de prazo ao abrir chamado). */
 .info-banner {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
@@ -896,6 +1102,9 @@ select { cursor: pointer; }
 }
 
 /* ── Linha do tempo de atividades do chamado ── */
+/* Histórico nos detalhes do chamado. A linha vertical é a borda
+   esquerda de cada item; a bolinha é o ::before. O último item tem
+   a borda transparente para a linha não passar do fim. */
 .timeline { display: flex; flex-direction: column; gap: 0; }
 .timeline-item {
   display: flex; gap: 12px; padding: 8px 0;
@@ -912,6 +1121,10 @@ select { cursor: pointer; }
 .timeline-text { font-size: 13px; color: var(--fg2); line-height: 1.5; }
 
 /* ── Reação ao clique (onda) ── */
+/* O <span class="ripple"> é criado pelo ui.js no ponto clicado. Começa
+   com tamanho 0 e cresce até o tamanho total enquanto some.
+   currentColor = usa a cor do texto do botão. Em botões coloridos a
+   onda é branca. */
 .ripple {
   position: absolute; border-radius: 50%; pointer-events: none;
   background: currentColor; opacity: .25;
@@ -921,6 +1134,9 @@ select { cursor: pointer; }
 @keyframes ripple { to { transform: scale(1); opacity: 0; } }
 
 /* ── Foco visível pelo teclado ── */
+/* Acessibilidade: quem navega com a tecla Tab precisa ver onde está.
+   :focus-visible só aparece no uso pelo teclado (não no clique do
+   mouse). O contorno padrão é trocado pelo anel azul --ring. */
 .btn:focus-visible, .nav-item:focus-visible, .stat-card:focus-visible,
 .login-tab:focus-visible, .login-link:focus-visible, .modal-close:focus-visible,
 .user-menu-btn:focus-visible, .user-dropdown-item:focus-visible,
@@ -931,6 +1147,17 @@ select { cursor: pointer; }
 .field input:focus, .field select:focus, .field textarea:focus { box-shadow: var(--ring); }
 
 /* ── Ícone animado de "chamado recebido" (reinicia a cada abertura da janela) ── */
+/* Sequência de animações, que só rodam com a janela aberta (.open):
+   1) check-pop: o círculo verde surge girando e crescendo; a curva
+      cubic-bezier(.34, 1.56, .64, 1) passa um pouco do tamanho final e
+      volta, dando um efeito de "mola";
+   2) check-draw: o "✓" é desenhado aos poucos. Truque: stroke-dasharray
+      e stroke-dashoffset escondem o traço, e a animação o revela;
+   3) check-ripple: uma onda verde se espalha em volta;
+   4) check-glow: o ícone "respira" (pulsa) sem parar.
+   Os números depois do nome (.45s, 1.6s) são atrasos para cada etapa
+   começar depois da anterior. Como a animação depende de .open, ela
+   recomeça toda vez que a janela abre. */
 .check-anim {
   width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; overflow: visible;
 }
@@ -960,16 +1187,30 @@ select { cursor: pointer; }
   50%      { transform: scale(1.08); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--success) 70%, transparent)); }
 }
 
+/* ── Movimento reduzido ── */
+/* Se a pessoa ativou "reduzir movimento" no sistema (por enjoo ou
+   sensibilidade), as animações e transições ficam praticamente
+   instantâneas, e a grade do fundo para de se mover. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
   .fx-grid::before { animation: none !important; }
 }
 
 /* ── Responsividade ── */
+/* "Responsivo" = a tela se adapta ao tamanho do aparelho.
+   @media (max-width: X) aplica as regras só quando a janela tem até X
+   pixels de largura. São três degraus:
+     até 960px (tablet): indicadores em 2 colunas;
+     até 720px (celular deitado / tablet pequeno): menu vira gaveta;
+     até 480px (celular): tudo em 1 coluna e espaçamentos menores. */
 @media (max-width: 960px) {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 720px) {
+  /* A barra lateral deixa de ocupar espaço (--sidebar-w: 0) e fica
+     escondida fora da tela, à esquerda (translateX(-220px)). Com a
+     classe .open (toggleSidebar no ui.js) ela desliza para dentro.
+     O botão hambúrguer aparece, e grades de 2 ou 3 colunas viram 1. */
   :root { --sidebar-w: 0px; }
   .sidebar { transform: translateX(-220px); width: 220px; }
   .sidebar.open { transform: translateX(0); }

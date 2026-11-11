@@ -1,26 +1,62 @@
 <!doctype html>
 <html lang="pt-BR" class="booting">
 <head>
+  <!-- ════════════════════════════════════════
+       SUPORTE MEGA: página única do sistema de chamados de TI
+       ════════════════════════════════════════
+       Este arquivo contém TODAS as telas do sistema: a tela de login,
+       o aplicativo (barra lateral, barra do topo e as páginas) e as
+       janelas modais (caixas que abrem por cima da tela).
+       Só uma página aparece por vez; quem troca é a função navigate()
+       do js/ui.js. Os dados (chamados, usuários etc.) não ficam aqui:
+       são buscados no banco de dados Supabase pelos arquivos em js/
+       e colocados nas tabelas e listas vazias deste arquivo.
+       A tag html começa com a classe "booting": enquanto ela existir,
+       só aparece a tela de carregamento (ver css/styles.css).
+
+       Cabeçalho (head): informações para o navegador, que não aparecem
+       na página.
+       charset UTF-8: permite acentos e símbolos.
+       viewport: faz a página caber na largura do celular, sem zoom;
+       viewport-fit=cover usa a tela toda em celulares com entalhe.
+       title: texto da aba do navegador.
+       description: resumo usado por buscadores. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Suporte TI – Mega Feirão dos Calçados</title>
   <meta name="description" content="Sistema de chamados de TI – Mega Feirão dos Calçados">
 
   <!-- Fontes -->
+  <!-- Fontes do Google Fonts. "preconnect" adianta a conexão com o
+       servidor para as fontes chegarem mais rápido. Fontes usadas:
+       Inter (texto), Exo 2 (títulos), Orbitron (números grandes),
+       JetBrains Mono (protocolos e códigos), Barlow e Barlow Condensed
+       (logotipo). display=swap mostra o texto com uma fonte reserva
+       enquanto a fonte final carrega. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@1,900&family=Barlow+Condensed:wght@700&family=Exo+2:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@500;700&display=swap">
 
+  <!-- PWA (Progressive Web App): permite instalar o site como se fosse
+       um aplicativo no celular ou computador.
+       manifest.json: nome, ícones e cores do aplicativo instalado.
+       theme-color: cor da barra do navegador no celular.
+       icon: ícone da aba; apple-touch-icon: ícone na tela do iPhone. -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#050b18">
   <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
   <link rel="apple-touch-icon" href="icon-192.png">
 
   <!-- Estilos -->
+  <!-- Toda a aparência (cores, temas claro e escuro, layout, celular)
+       fica em css/styles.css. -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
 <!-- Fundo futurista (decorativo) -->
+<!-- Camadas animadas atrás de tudo: grade em perspectiva, brilho no
+     horizonte e ondas neon. aria-hidden="true" avisa os leitores de
+     tela (usados por pessoas cegas) para ignorar este enfeite. -->
 <div class="bg-fx" aria-hidden="true">
   <div class="fx-grid"></div>
   <div class="fx-horizon"></div>
@@ -28,6 +64,9 @@
 </div>
 
 <!-- Carregamento inicial: aparece enquanto a sessão salva é verificada -->
+<!-- Fica visível só enquanto a tag html tem a classe "booting".
+     O auth.js tira essa classe quando descobre se a pessoa já está
+     logada (mostra o aplicativo) ou não (mostra o login). -->
 <div class="boot-screen" aria-live="polite">
   <div class="spinner"></div>
   <span>Carregando…</span>
@@ -35,10 +74,20 @@
 
 <!-- ════════════════════════════════════════
      TELA DE LOGIN
-     ════════════════════════════════════════ -->
+     ════════════════════════════════════════
+     Caixa central com o logotipo e vários "formulários" que se
+     revezam (só um aparece por vez; quem alterna é o js/auth.js):
+       form-email-confirmed: aviso de e-mail confirmado;
+       form-login: entrar com e-mail e senha;
+       form-forgot-password: pedir link para recuperar a senha;
+       form-reset-password: criar a nova senha (ao voltar do link);
+       form-register: criar uma conta nova.
+     Os botões chamam funções do auth.js pelo atributo onclick. -->
 <div class="login-screen" id="login-screen">
   <div class="login-box">
 
+    <!-- Logotipo desenhado em SVG (imagem feita de código). As cores
+         vêm das variáveis do CSS, por isso mudam com o tema. -->
     <div class="login-logo">
       <svg class="mega-logo" viewBox="0 0 220 70" role="img" aria-label="Mega Feirão dos Calçados">
         <defs>
@@ -59,6 +108,8 @@
     </div>
 
     <!-- Retorno do link de confirmação de e-mail -->
+    <!-- Aparece quando a pessoa clica no link de confirmação recebido
+         por e-mail após o cadastro. Começa escondido (display:none). -->
     <div id="form-email-confirmed" class="confirm-box" style="display:none" role="status" aria-live="polite">
       <div class="confirm-icon" id="ec-icon">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
@@ -73,6 +124,7 @@
     </div>
 
     <!-- Abas -->
+    <!-- Alternam entre "Entrar" e "Cadastrar" (showLoginTab, no auth.js). -->
     <div class="login-tabs">
       <button class="login-tab active" id="tab-login"    onclick="showLoginTab('login')">Entrar</button>
       <button class="login-tab"        id="tab-register" onclick="showLoginTab('register')">Cadastrar</button>
@@ -97,6 +149,8 @@
       </button>
     </div>
 
+    <!-- Esqueci minha senha: envia um link de recuperação para o e-mail.
+         login-err mostra erros; login-note mostra a confirmação de envio. -->
     <div id="form-forgot-password" style="display:none;flex-direction:column;gap:14px">
       <div class="form-group">
         <label class="form-label" for="f-email">E-mail cadastrado</label>
@@ -110,6 +164,8 @@
       <button type="button" class="login-link" onclick="showLoginTab('login')">Voltar para entrar</button>
     </div>
 
+    <!-- Nova senha: aparece quando a pessoa volta pelo link de
+         recuperação recebido por e-mail. -->
     <div id="form-reset-password" style="display:none;flex-direction:column;gap:14px">
       <div class="form-group">
         <label class="form-label" for="p-senha">Nova senha</label>
@@ -126,6 +182,8 @@
     </div>
 
     <!-- Formulário de cadastro -->
+    <!-- Cria a conta. Só e-mails autorizados pelo super administrador
+         (página Usuários) conseguem se cadastrar. -->
     <div id="form-register" style="display:none;flex-direction:column;gap:14px">
       <div class="form-group">
         <label class="form-label">Nome / Apelido *</label>
@@ -150,10 +208,17 @@
 
 <!-- ════════════════════════════════════════
      APLICAÇÃO PRINCIPAL
-     ════════════════════════════════════════ -->
+     ════════════════════════════════════════
+     Tudo o que aparece depois do login. Começa escondido
+     (display:none) e é mostrado pelo auth.js quando a pessoa entra.
+     Estrutura: barra lateral (menu) à esquerda + área principal à
+     direita (barra do topo e as páginas). -->
 <div class="app" id="app-root" style="display:none">
 
   <!-- ── Barra lateral ── -->
+  <!-- Menu de navegação. Cada botão .nav-item tem data-page (o nome da
+       página) e chama navigate() do ui.js ao ser clicado. No celular a
+       barra fica escondida e abre pelo botão ☰ da barra do topo. -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
       <svg class="mega-logo" viewBox="0 0 220 70" role="img" aria-label="Mega Feirão dos Calçados">
@@ -174,6 +239,8 @@
       <div class="sub">Suporte TI</div>
     </div>
 
+    <!-- Itens para todos os usuários. nav-badge mostra quantos
+         chamados estão abertos (preenchido pelo chamados.js). -->
     <div class="nav-section">
       <div class="nav-label">Principal</div>
       <button class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
@@ -192,6 +259,10 @@
     </div>
 
     <!-- Gestão: somente para administradores -->
+    <!-- O grupo começa escondido; o auth.js o mostra para
+         administradores. Itens com a classe "superadmin-only"
+         (Equipamentos e Aquisição) só aparecem para o super
+         administrador (regra no styles.css). -->
     <div class="nav-section" id="nav-admin-section" style="display:none">
       <div class="nav-label">Gestão (Admin)</div>
       <button class="nav-item superadmin-only" data-page="equipamentos" onclick="navigate('equipamentos')">
@@ -220,6 +291,8 @@
       </button>
     </div>
 
+    <!-- Rodapé do menu: botão de tema (automático, claro, escuro),
+         controlado por toggleTheme() no ui.js. -->
     <div class="sidebar-footer">
       <button class="theme-toggle" onclick="toggleTheme()">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1v12A6 6 0 0 1 8 2z"/></svg>
@@ -229,12 +302,17 @@
   </nav>
 
   <!-- Camada de sobreposição para dispositivos móveis -->
+  <!-- Fundo escuro atrás do menu aberto no celular; clicar nele fecha
+       o menu (closeSidebar, no ui.js). -->
   <div id="nav-overlay" onclick="closeSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99"></div>
 
   <!-- ── Conteúdo principal ── -->
   <div class="main">
 
     <!-- Barra superior -->
+    <!-- Contém: botão ☰ (só no celular), título da página atual
+         (trocado pelo navigate), indicador de carregamento (setLoading
+         no ui.js) e o menu do usuário. -->
     <header class="topbar">
       <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
@@ -250,6 +328,9 @@
       <div class="topbar-spacer"></div>
 
       <!-- Menu do usuário -->
+      <!-- Botão com as iniciais (avatar) e o nome. Ao clicar abre a
+           lista suspensa com nome, e-mail, perfil (selo), e as opções
+           Editar nome, Alterar senha e Sair. Funções no auth.js. -->
       <div class="user-menu-wrap" id="user-menu-wrap">
         <button class="user-menu-btn" onclick="toggleUserMenu()" aria-haspopup="true" aria-expanded="false">
           <div class="user-avatar" id="user-avatar">?</div>
@@ -280,6 +361,12 @@
     </header>
 
     <!-- ════════ PAINEL ════════ -->
+    <!-- Página inicial (Início). Cada página é uma section com a classe
+         "page" e id "page-NOME"; só a que tem "active" aparece.
+         Aqui: 4 cartões de números (clicar abre a lista de chamados já
+         filtrada, via openChamadosFiltrados no chamados.js), a lista de
+         chamados recentes e o gráfico por categoria. Os números e listas
+         são preenchidos pelo chamados.js. -->
     <section class="page active" id="page-dashboard">
       <div class="stats-row">
         <button type="button" class="stat-card accent clickable" onclick="openChamadosFiltrados({ status: 'Aberto' })">
@@ -325,6 +412,14 @@
     </section>
 
     <!-- ════════ CHAMADOS ════════ -->
+    <!-- Lista de chamados. Tem botões de exportação (CSV e Excel), uma
+         barra de filtros (busca, status, prioridade, categoria, loja e
+         período) e a tabela. Cada filtro, ao mudar, redesenha a tabela
+         (renderChamadosTable, no chamados.js).
+         Esta tabela tem ordenação própria (onclick="sortBy" nos
+         títulos), por isso a ordenação automática do ui.js a ignora.
+         As linhas do tbody são montadas pelo chamados.js; a linha que
+         está aqui é só o "carregando" inicial. -->
     <section class="page" id="page-chamados">
       <div class="section-header">
         <span class="section-title">Chamados</span>
@@ -397,6 +492,13 @@
     </section>
 
     <!-- ════════ NOVO CHAMADO ════════ -->
+    <!-- Formulário para abrir um chamado. Ao enviar, chama submitChamado
+         (chamados.js), que grava no Supabase e mostra a janela
+         "Chamado recebido". Campos com * são obrigatórios ("required").
+         As listas de loja e categoria são preenchidas pelo JS.
+         Anexos: os campos de arquivo ficam escondidos ("hidden") e são
+         abertos pelos botões "Adicionar…"; as prévias aparecem nas
+         divs "...-preview". -->
     <section class="page" id="page-novo">
       <div class="section-header">
         <span class="section-title">Abrir Novo Chamado</span>
@@ -511,6 +613,10 @@
     </section>
 
     <!-- ════════ EQUIPAMENTOS (administrador) ════════ -->
+    <!-- Inventário de equipamentos (só super administrador). Botões de
+         exportação e de novo cadastro, filtros e tabela. Tudo é
+         controlado pelo equipamentos.js; o botão "Novo" abre a janela
+         modal-equip (mais abaixo). -->
     <section class="page" id="page-equipamentos">
       <div class="section-header">
         <span class="section-title">Inventário de Equipamentos</span>
@@ -568,6 +674,10 @@
     </section>
 
     <!-- ════════ INTERNET DAS LOJAS (administrador) ════════ -->
+    <!-- Planos de internet de cada loja (fornecedor, valor, IP...).
+         Administradores consultam; só o super administrador cadastra e
+         edita (elementos "superadmin-only"). Controlado pelo internet.js;
+         o cadastro usa a janela modal-internet. -->
     <section class="page" id="page-internet">
       <div class="section-header">
         <span class="section-title">Planos de Internet das Lojas</span>
@@ -616,6 +726,11 @@
     </section>
 
     <!-- ════════ AQUISIÇÃO DE EQUIPAMENTOS (administrador) ════════ -->
+    <!-- Lista de compras de equipamentos (só super administrador).
+         No alto, cartões com quantidade e valor por status (clicar filtra
+         a tabela). A tabela tem um rodapé (tfoot) com o valor total dos
+         itens filtrados. Controlado pelo aquisicoes.js; o cadastro usa a
+         janela modal-aquisicao. -->
     <section class="page" id="page-aquisicoes">
       <div class="stats-row" style="margin-bottom:16px">
         <button type="button" class="stat-card warning clickable" onclick="filterAquisicaoStatus('Pendente')">
@@ -699,6 +814,10 @@
     </section>
 
     <!-- ════════ TICKETS DATA SYSTEM (administrador) ════════ -->
+    <!-- Registro dos atendimentos pedidos ao suporte da empresa Data
+         System. Cartões por situação (clicar filtra), busca e tabela.
+         Controlado pelo tickets.js; o cadastro usa a janela modal-ticket
+         e é só do super administrador. -->
     <section class="page" id="page-tickets">
       <div class="stats-row" style="margin-bottom:16px">
         <button type="button" class="stat-card success clickable" onclick="filterTicketSituacao('Resolvido')">
@@ -763,6 +882,11 @@
     </section>
 
     <!-- ════════ RELATÓRIOS (administrador) ════════ -->
+    <!-- Estatísticas dos chamados. No topo: escolha do tipo de gráfico
+         (barras ou pizza), filtros de período e loja e exportação.
+         Abaixo: indicadores, gráficos por categoria, loja, prioridade e
+         status, tendência mensal e recorrências. As divs vazias (id
+         "rel-...") são preenchidas pelo relatorios.js. -->
     <section class="page" id="page-relatorios">
       <div class="section-header">
         <span class="section-title">Relatórios</span>
@@ -854,6 +978,10 @@
     </section>
 
     <!-- ════════ USUÁRIOS (administrador) ════════ -->
+    <!-- Lista de usuários (usuarios-list) e, só para o super
+         administrador, a seção de e-mails autorizados a se cadastrar
+         (allowed-emails-section, começa escondida). Controlado pelo
+         auth.js (loadUsuarios e loadAllowedEmails). -->
     <section class="page" id="page-usuarios">
       <div class="section-header">
         <span class="section-title">Gerenciar Usuários</span>
@@ -882,9 +1010,16 @@
 
 <!-- ════════════════════════════════════════
      MODAIS
-     ════════════════════════════════════════ -->
+     ════════════════════════════════════════
+     Janelas que abrem por cima da tela. Cada uma tem:
+       modal-overlay: o fundo escuro (clicar nele ou apertar Esc fecha);
+       modal: a caixa, com cabeçalho (título e botão Fechar) e corpo.
+     Abrem com openModal('id') e fecham com closeModal('id'), no ui.js.
+     Ficam fora do app-root para aparecerem por cima de tudo. -->
 
 <!-- Janela modal: detalhes do chamado -->
+<!-- O corpo (md-body) começa vazio e é montado pelo chamados.js
+     (openDetalhe) com os dados, anexos, histórico e ações do chamado. -->
 <div class="modal-overlay" id="modal-detalhe">
   <div class="modal" style="max-width:660px">
     <div class="modal-header">
@@ -896,6 +1031,8 @@
 </div>
 
 <!-- Janela modal: novo / editar equipamento -->
+<!-- Formulário usado pelo equipamentos.js. O campo escondido e-id fica
+     vazio num cadastro novo e guarda o id do equipamento ao editar. -->
 <div class="modal-overlay" id="modal-equip">
   <div class="modal">
     <div class="modal-header">
@@ -977,6 +1114,9 @@
 </div>
 
 <!-- Janela modal: convite para instalar o aplicativo -->
+<!-- Aberta pelo install.js quando o navegador permite instalar o
+     sistema como aplicativo (PWA). "Agora não" chama dismissInstall e
+     "Instalar aplicativo" chama installApp. -->
 <div class="modal-overlay" id="modal-install">
   <div class="modal install-modal" style="max-width:420px" role="dialog" aria-labelledby="install-title">
     <div class="modal-header">
@@ -1009,6 +1149,7 @@
 </div>
 
 <!-- Janela modal: editar perfil -->
+<!-- Aberta pela opção "Editar nome" do menu do usuário (auth.js). -->
 <div class="modal-overlay" id="modal-perfil">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
@@ -1028,6 +1169,9 @@
 </div>
 
 <!-- Janela modal: aviso após abrir um chamado -->
+<!-- Mostrada pelo chamados.js logo depois de gravar um chamado novo.
+     Tem o ícone animado de "✓" (animação no styles.css), o número de
+     protocolo (aparece quando existe) e o aviso do prazo de até 48 horas. -->
 <div class="modal-overlay" id="modal-chamado-aberto">
   <div class="modal" style="max-width:480px">
     <div class="modal-header">
@@ -1057,6 +1201,8 @@
 </div>
 
 <!-- Janela modal: alterar senha -->
+<!-- Aberta pela opção "Alterar senha" do menu do usuário; salva com
+     savePassword (auth.js). -->
 <div class="modal-overlay" id="modal-senha">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
@@ -1080,6 +1226,9 @@
 </div>
 
 <!-- Janela modal: novo / editar plano de internet -->
+<!-- Formulário do internet.js. internet-id vazio = cadastro novo;
+     preenchido = edição. As "datalist" oferecem sugestões enquanto a
+     pessoa digita, mas permitem escrever outro valor. -->
 <div class="modal-overlay" id="modal-internet">
   <div class="modal" style="max-width:760px">
     <div class="modal-header">
@@ -1144,6 +1293,7 @@
 </div>
 
 <!-- Janela modal: novo / editar ticket Data System -->
+<!-- Formulário do tickets.js. ticket-id vazio = ticket novo. -->
 <div class="modal-overlay" id="modal-ticket">
   <div class="modal" style="max-width:600px">
     <div class="modal-header">
@@ -1186,6 +1336,8 @@
 </div>
 
 <!-- Janela modal: novo / editar item de aquisição -->
+<!-- Formulário do aquisicoes.js. Ao digitar quantidade ou valor, o
+     "Valor final" é recalculado na hora (updateAquisicaoFormTotal). -->
 <div class="modal-overlay" id="modal-aquisicao">
   <div class="modal" style="max-width:760px">
     <div class="modal-header">
@@ -1260,12 +1412,32 @@
 
 <!-- ════════════════════════════════════════
      TOAST CONTAINER
-     ════════════════════════════════════════ -->
+     ════════════════════════════════════════
+     Lugar (canto inferior direito) onde a função toast() do ui.js
+     coloca as mensagens rápidas de sucesso, erro ou informação. -->
 <div class="toast-container" id="toasts"></div>
 
 <!-- ════════════════════════════════════════
      SCRIPTS
-     ════════════════════════════════════════ -->
+     ════════════════════════════════════════
+     Ficam no fim do body para que todo o HTML acima já exista quando
+     o código rodar (assim o JS encontra os elementos pelo id).
+
+     Por que a ORDEM importa: os arquivos não usam "import"; todos
+     compartilham funções e variáveis globais. O navegador executa um
+     arquivo de cada vez, na ordem em que aparecem. Por isso:
+       1. supabase.min.js: biblioteca que conversa com o banco Supabase;
+          precisa vir antes de qualquer código que use o banco.
+       2. config.js: endereço do Supabase, listas (lojas, categorias),
+          títulos das páginas. Usado por todos os demais.
+       3. ui.js: utilidades de tela (toast, janelas, navegação, datas).
+       4. auth.js: login, perfis e permissões.
+       5. chamados.js até install.js: uma tela cada (chamados,
+          equipamentos, internet, aquisições, tickets, relatórios e
+          instalação do aplicativo).
+       6. app.js: por último, pois dá a partida no sistema e usa
+          funções de todos os arquivos anteriores.
+     Se a ordem mudar, pode aparecer erro de "função não definida". -->
 <!-- Biblioteca Supabase JS v2 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 
