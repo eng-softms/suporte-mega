@@ -195,6 +195,7 @@ function navigate(page) {
   if (page === 'usuarios')     { loadUsuarios(); loadAllowedEmails(); }
   if (page === 'internet')     loadPlanosInternet();
   if (page === 'aquisicoes')   loadAquisicoes();
+  if (page === 'avisos')       abrirAvisos();
 
   // 5) Guarda qual página está aberta (usada pela initUI para reabri-la).
   currentPage = page;
@@ -470,7 +471,9 @@ function setLoading(on) {
 // Não recebe nem devolve nada.
 function initUI() {
   // Na primeira chamada abre a página inicial; depois reabre a atual já com os dados
-  navigate(currentPage || homePage());
+  // Link compartilhado de um aviso (#aviso-<id>) abre direto o mural
+  const linkAviso = /^#aviso-/.test(location.hash) ? 'avisos' : null;
+  navigate(currentPage || linkAviso || homePage());
 }
 
 // ─────────────────────────────────────────

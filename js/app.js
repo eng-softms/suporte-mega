@@ -49,6 +49,11 @@ async function initDb() {
   // (admin vê "Solicitante"; usuário comum vê "Nome") — chamados.js
   updateChamadosTableHeader();
   initUI(); // abre logo a última página, sem esperar os dados
+  // Mural de avisos (avisos.js): carrega em segundo plano, sem segurar a tela,
+  // para o contador de avisos novos do menu já aparecer. Sem toast de erro
+  // aqui: se o script SQL dos avisos ainda não foi executado, só a aba avisa.
+  loadAvisos({ silencioso: true });
+  subscribeAvisos();
   try {
     // Equipamentos são exclusivos do super administrador
     // Promise.all: dispara as duas buscas AO MESMO TEMPO e espera ambas

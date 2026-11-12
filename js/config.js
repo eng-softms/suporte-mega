@@ -79,6 +79,7 @@ const PAGE_TITLES = {
   dashboard:   'Início',
   chamados:    'Chamados',
   novo:        'Novo Chamado',
+  avisos:      'Avisos',
   equipamentos:'Equipamentos',
   internet:    'Internet das Lojas',
   aquisicoes:  'Aquisição de Equipamentos',

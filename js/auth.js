@@ -604,6 +604,12 @@ function hideApp() {
   allPlanosInternet = [];
   allAquisicoes = [];
   allTickets = [];
+  // Mural de avisos (avisos.js)
+  allAvisos = [];
+  avisoCurtidas = new Map();
+  avisoComentarios = new Map();
+  avisosSalvos = new Set();
+  avisosCarregados = false;
   setLoginErr('l', '');
   setLoginErr('r', '');
   // Se a saída foi forçada (ex.: e-mail não autorizado em checkAuthorized),

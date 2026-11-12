@@ -256,6 +256,13 @@
         <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a6 6 0 1 1 0 12A6 6 0 0 1 8 2zm.5 3.5h-1V7.5H5.5v1H7.5V10.5h1V8.5H10.5v-1H8.5V5.5z"/></svg>
         Novo Chamado
       </button>
+      <!-- Mural de avisos (todos os usuários). badge-avisos mostra quantos
+           avisos novos chegaram desde a última visita (avisos.js). -->
+      <button class="nav-item" data-page="avisos" onclick="navigate('avisos')">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M12 2v1.2L4 5H2v5h2l.6.13L5.5 14h2l-.8-3.4L12 11.8V13h1V2h-1zm0 2.22v6.56L5 9.2V5.8l7-1.58z"/></svg>
+        Avisos
+        <span class="nav-badge" id="badge-avisos" style="display:none">0</span>
+      </button>
     </div>
 
     <!-- Gestão: somente para administradores -->
@@ -610,6 +617,40 @@
           <button type="reset" class="btn btn-ghost">Limpar</button>
         </div>
       </form>
+    </section>
+
+    <!-- ════════ AVISOS (todos os usuários) ════════ -->
+    <!-- Mural de avisos em formato de feed. Administradores publicam
+         (caixa "Escreva um aviso…"); todos curtem, comentam, compartilham
+         e salvam. Tudo é controlado pelo avisos.js; a publicação usa a
+         janela modal-aviso e as fotos abrem na modal-aviso-foto. -->
+    <section class="page" id="page-avisos">
+      <div class="avisos-wrap">
+        <div class="section-header">
+          <span class="section-title">Mural de Avisos</span>
+          <div class="avisos-filtros" role="group" aria-label="Filtrar avisos">
+            <button type="button" class="avisos-tab active" data-avisos-filtro="todos" onclick="setAvisosFiltro('todos')">Todos</button>
+            <button type="button" class="avisos-tab" data-avisos-filtro="salvos" onclick="setAvisosFiltro('salvos')">☆ Salvos</button>
+          </div>
+        </div>
+        <div class="field">
+          <input id="avisos-busca" type="search" placeholder="Buscar nos avisos…" oninput="renderAvisos()" aria-label="Buscar nos avisos">
+        </div>
+
+        <div class="card aviso-composer" id="avisos-composer" style="display:none">
+          <div class="aviso-composer-top">
+            <span class="aviso-avatar" id="avisos-composer-avatar" aria-hidden="true">?</span>
+            <button type="button" class="aviso-composer-input" onclick="openNovoAviso()">Escreva um aviso para a equipe…</button>
+          </div>
+          <div class="aviso-composer-atalhos">
+            <button type="button" onclick="openNovoAviso('imagem')"><span aria-hidden="true">🖼️</span> Foto</button>
+            <button type="button" onclick="openNovoAviso('video')"><span aria-hidden="true">🎬</span> Vídeo</button>
+            <button type="button" onclick="openNovoAviso('documento')"><span aria-hidden="true">📄</span> Documento</button>
+          </div>
+        </div>
+
+        <div id="avisos-feed" class="avisos-feed" aria-live="polite"></div>
+      </div>
     </section>
 
     <!-- ════════ EQUIPAMENTOS (administrador) ════════ -->
@@ -1410,6 +1451,66 @@
   </div>
 </div>
 
+<!-- Janela modal: publicar / editar aviso (avisos.js) -->
+<!-- Os campos de arquivo ficam escondidos e são abertos pelos botões
+     Foto, Vídeo e Documento; a prévia dos anexos aparece em aviso-form-midia. -->
+<div class="modal-overlay" id="modal-aviso">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <span class="modal-title" id="aviso-modal-title">Publicar aviso</span>
+      <button class="modal-close" onclick="closeModal('modal-aviso')">✕ Fechar</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-aviso" onsubmit="submitAviso(event)" style="display:flex;flex-direction:column;gap:14px">
+        <div class="field">
+          <label for="aviso-form-titulo">Título (opcional)</label>
+          <input id="aviso-form-titulo" type="text" maxlength="160" placeholder="Ex.: Manutenção na rede sábado às 8h">
+        </div>
+        <div class="field">
+          <label for="aviso-form-texto">Mensagem</label>
+          <textarea id="aviso-form-texto" rows="6" maxlength="5000" placeholder="Escreva o aviso…"></textarea>
+        </div>
+
+        <input id="aviso-input-imagem" type="file" multiple hidden accept="image/jpeg,image/png,image/gif,image/webp" onchange="addArquivosAviso(this,'imagem')">
+        <input id="aviso-input-video" type="file" hidden accept="video/mp4,video/webm,video/quicktime" onchange="addArquivosAviso(this,'video')">
+        <input id="aviso-input-documento" type="file" multiple hidden
+               accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/csv"
+               onchange="addArquivosAviso(this,'documento')">
+        <div class="field">
+          <label>Anexos (opcional)</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="escolherArquivoAviso('imagem')">🖼️ Fotos</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="escolherArquivoAviso('video')">🎬 Vídeo</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="escolherArquivoAviso('documento')">📄 Documentos</button>
+          </div>
+          <small style="font-size:11px;color:var(--fg3)">Até 10 fotos (5 MB cada), 1 vídeo (50 MB – MP4, WebM ou MOV) e 5 documentos (10 MB cada – PDF, Word, Excel, TXT ou CSV).</small>
+          <div id="aviso-form-midia" class="aviso-anexos" aria-live="polite" style="display:none"></div>
+        </div>
+
+        <label class="aviso-check" id="aviso-fixar-field">
+          <input type="checkbox" id="aviso-form-fixado"> 📌 Fixar no topo do mural
+        </label>
+
+        <div style="display:flex;gap:10px">
+          <button type="submit" class="btn btn-primary" id="btn-save-aviso">Publicar</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-aviso')">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Janela modal: foto do aviso em tela cheia (setas ← → passam as fotos) -->
+<div class="modal-overlay aviso-foto-overlay" id="modal-aviso-foto">
+  <div class="aviso-foto-box" role="dialog" aria-label="Foto do aviso">
+    <button type="button" class="modal-close aviso-foto-fechar" onclick="closeModal('modal-aviso-foto')" aria-label="Fechar">✕</button>
+    <button type="button" class="aviso-foto-nav prev" onclick="passarFotoAviso(-1)" aria-label="Foto anterior">‹</button>
+    <img id="aviso-foto-img" alt="Foto do aviso">
+    <button type="button" class="aviso-foto-nav next" onclick="passarFotoAviso(1)" aria-label="Próxima foto">›</button>
+    <span class="aviso-foto-contador" id="aviso-foto-contador"></span>
+  </div>
+</div>
+
 <!-- ════════════════════════════════════════
      TOAST CONTAINER
      ════════════════════════════════════════
@@ -1450,6 +1551,7 @@
 <script src="js/internet.js"></script>
 <script src="js/aquisicoes.js"></script>
 <script src="js/tickets.js"></script>
+<script src="js/avisos.js"></script>
 <script src="js/relatorios.js"></script>
 <script src="js/install.js"></script>
 <script src="js/app.js"></script>

@@ -24,7 +24,7 @@
 // ═══════════════════════════════════════════════════════
 
 // CACHE_NAME: nome (com número de versão) da "caixa" de cache atual.
-const CACHE_NAME = 'suporte-mega-v24';
+const CACHE_NAME = 'suporte-mega-v25';
 
 // Arquivos que serão armazenados em cache para acesso básico sem conexão
 // Se um arquivo novo for criado no sistema (ex.: um novo js), inclua-o aqui.
@@ -40,6 +40,7 @@ const ASSETS = [
   './js/internet.js',
   './js/aquisicoes.js',
   './js/tickets.js',
+  './js/avisos.js',
   './js/relatorios.js',
   './js/install.js',
   './js/app.js',
