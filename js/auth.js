@@ -98,7 +98,8 @@ function showEmailConfirmed() {
       '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
     document.getElementById('ec-title').textContent = 'Não foi possível confirmar';
     document.getElementById('ec-text').textContent = emailConfirmation +
-      ' Vá para a página de login e tente entrar; se não conseguir, faça o cadastro novamente para receber um novo link.';
+      ' Vá para a página de login e tente entrar com a senha que você criou no cadastro. ' +
+      'Se não lembrar a senha, use "Esqueci minha senha". Não faça um novo cadastro com o mesmo e-mail.';
   }
   document.getElementById('form-email-confirmed').style.display = 'flex';
 }
@@ -213,6 +214,30 @@ function showPasswordRecoveryForm() {
   }
 }
 
+// authErrorMsg: traduz para português os erros do Supabase mais comuns na
+// tela de acesso, principalmente os de LIMITE de tentativas (o Supabase
+// bloqueia por um tempo quando muitos e-mails ou logins são pedidos seguidos).
+// - Recebe: error (objeto de erro do Supabase). Devolve o texto a exibir.
+function authErrorMsg(error) {
+  const m = (error?.message || '').toLowerCase();
+  if (error?.status === 429 || m.includes('rate limit') || m.includes('for security purposes')) {
+    // Ex.: "For security purposes, you can only request this after 42 seconds."
+    const seg = (error?.message || '').match(/after (\d+) seconds?/i);
+    return seg
+      ? `Muitas tentativas seguidas. Aguarde ${seg[1]} segundos e tente de novo.`
+      : 'Muitas tentativas seguidas. Aguarde cerca de 1 hora e tente de novo ' +
+        '(ou peça ajuda ao suporte de TI).';
+  }
+  if (m.includes('invalid login credentials')) return 'E-mail ou senha incorretos.';
+  if (m.includes('email not confirmed')) {
+    return 'Confirme seu e-mail antes de entrar (use o link MAIS RECENTE que recebeu).';
+  }
+  if (m.includes('user already registered')) {
+    return 'Este e-mail já está cadastrado. Use "Entrar" ou "Esqueci minha senha".';
+  }
+  return error?.message || 'Erro desconhecido.';
+}
+
 // setLoginErr: mostra (ou apaga) a mensagem de erro de um formulário da tela de acesso.
 // - Recebe: form = letra do formulário ('l' login, 'r' cadastro,
 //   'f' esqueci a senha, 'p' nova senha) e msg = texto do erro ('' apaga).
@@ -255,7 +280,7 @@ async function sendPasswordRecovery() {
     note.textContent = 'Se esse e-mail estiver cadastrado, você receberá um link para redefinir a senha.';
     note.classList.add('show');
   } catch (e) {
-    setLoginErr('f', 'Não foi possível enviar o e-mail: ' + e.message);
+    setLoginErr('f', 'Não foi possível enviar o e-mail: ' + authErrorMsg(e));
   } finally {
     // Com ou sem erro, reativa o botão
     btn.disabled = false;
@@ -344,12 +369,7 @@ async function doLogin() {
   btn.disabled = false; btn.textContent = 'Entrar';
   // Traduz para português as mensagens mais comuns do Supabase (que vêm em inglês)
   if (error) {
-    const msg = error.message.includes('Invalid login credentials')
-      ? 'E-mail ou senha incorretos.'
-      : error.message.includes('Email not confirmed')
-      ? 'Confirme seu e-mail antes de entrar.'
-      : error.message;
-    setLoginErr('l', msg);
+    setLoginErr('l', authErrorMsg(error));
   }
   // Se der certo, onAuthStateChange chama showApp() automaticamente.
 }
@@ -391,16 +411,28 @@ async function doRegister() {
     // O gatilho do banco recusa e-mails fora da lista; o Supabase devolve um erro genérico
     const msg = error.message.includes('Database error saving new user')
       ? 'Este e-mail não está autorizado a se cadastrar. Procure o suporte de TI.'
-      : error.message;
+      : authErrorMsg(error);
     setLoginErr('r', msg);
     return;
   }
 
   // O perfil é criado pelo gatilho SQL; a função (role) é sempre definida pelo banco.
 
+  // E-mail que JÁ tem conta confirmada: o Supabase não devolve erro (para não
+  // revelar quem está cadastrado), mas manda o usuário sem "identities".
+  // Nesse caso nada é enviado e a senha digitada agora NÃO vale.
+  if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    setLoginErr('r', 'Este e-mail já está cadastrado. Use "Entrar" com a senha do primeiro ' +
+      'cadastro ou "Esqueci minha senha".');
+    return;
+  }
+
   // O Supabase pode exigir confirmação de e-mail (depende das configurações do projeto).
+  // Atenção: se a pessoa já tinha se cadastrado e não confirmou, o Supabase
+  // reenvia o link mas MANTÉM a senha do primeiro cadastro.
   if (!data?.session) {
-    toast('Conta criada! Verifique seu e-mail para confirmar.', 'info');
+    toast('Conta criada! Verifique seu e-mail e clique no link mais recente. ' +
+      'Se já tinha se cadastrado antes, a senha continua sendo a do primeiro cadastro.', 'info');
     showLoginTab('login');
   }
   // Se a confirmação não for necessária, onAuthStateChange já inicia a sessão.
