@@ -57,6 +57,13 @@ const TIPOS_EQUIP = [
   'Nobreak / UPS','Smartphone / Tablet','Outro'
 ];
 
+// EMAILS_ALERTA_CHAMADO: quem ouve o som e vê o alerta de chamado novo
+// (notificacoes.js). Sempre em minúsculas.
+const EMAILS_ALERTA_CHAMADO = [
+  'borgesroberto41@gmail.com',
+  'tecnologiasuporte@megafeiraodoscalcados.com.br',
+];
+
 // STATUS_CHAMADO: situações possíveis de um chamado, na ordem do ciclo de
 // vida (do aberto até o encerrado). Usado na lista de status do detalhe do
 // chamado (chamados.js) e nos relatórios (relatorios.js).

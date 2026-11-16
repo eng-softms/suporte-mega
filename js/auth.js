@@ -626,6 +626,7 @@ function hideApp() {
   // para que o próximo login comece do zero
   appStartedFor = null;
   currentPage = null;
+  pararTodosAlertas(); // para o som de chamado novo (notificacoes.js)
   document.getElementById('login-screen').style.display = '';
   document.getElementById('app-root').style.display     = 'none';
   // Segurança/privacidade: apaga da memória os dados da pessoa anterior

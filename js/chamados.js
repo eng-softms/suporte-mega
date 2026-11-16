@@ -529,15 +529,17 @@ let chamadosChannel = null;
 
 // subscribeChamados: "assina" a tabela chamados no Supabase. A partir daí,
 // qualquer inclusão, alteração ou exclusão feita por qualquer pessoa
-// (event: '*') dispara loadChamados, que recarrega a lista e redesenha a tela.
+// (event: '*') dispara loadChamados, que recarrega a lista e redesenha a tela,
+// e avisa alertaChamadoRealtime (notificacoes.js), que toca o som de chamado novo.
 // Chamada por: app.js, logo depois do primeiro loadChamados.
 // Recebe: nada. Devolve: nada.
 function subscribeChamados() {
   // Evita assinaturas duplicadas quando o usuário sai e entra de novo
   if (chamadosChannel) supa.removeChannel(chamadosChannel);
   chamadosChannel = supa.channel('chamados-realtime')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'chamados' }, async () => {
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'chamados' }, async payload => {
       await loadChamados();
+      alertaChamadoRealtime(payload);
     })
     .subscribe();
 }
