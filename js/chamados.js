@@ -103,10 +103,20 @@ const getDocExt = name => (String(name).split('.').pop() || '').toLowerCase();
 // Recebe: nada. Devolve: nada (mas preenche allChamados).
 // "async/await": a função espera a resposta do servidor antes de continuar,
 // sem travar a página.
+const COLUNAS_LISTA_CHAMADOS = [
+  'id', 'user_id', 'email_abertura', 'protocolo', 'nome', 'contato', 'loja',
+  'categoria', 'prioridade', 'status', 'assunto', 'equipamento',
+  'acesso_remoto_tipo', 'acesso_remoto_codigo', 'observacao', 'resolucao',
+  'criado_em', 'atualizado_em',
+].join(',');
+
 async function loadChamados() {
-  // Monta a consulta: tabela "chamados", todas as colunas (*),
-  // ordenadas da mais nova para a mais antiga.
-  let query = supa.from('chamados').select('*').order('criado_em', { ascending: false });
+  // Monta a consulta: tabela "chamados", só as colunas usadas na lista
+  // (COLUNAS_LISTA_CHAMADOS), ordenadas da mais nova para a mais antiga.
+  // A descrição fica de fora porque pode ser muito grande (chamados antigos
+  // guardavam imagens inteiras em base64 dentro dela). Ela é buscada só
+  // quando precisa: ao abrir o chamado ou ao exportar (garantirDescricoes).
+  let query = supa.from('chamados').select(COLUNAS_LISTA_CHAMADOS).order('criado_em', { ascending: false });
 
   // Usuário comum: só vê os próprios chamados
   // (filtra pela coluna user_id = id de quem está logado).
@@ -141,6 +151,24 @@ function normalizeRow(r) {
     criadoEm:     r.criado_em     ? new Date(r.criado_em).getTime()     : null,
     atualizadoEm: r.atualizado_em ? new Date(r.atualizado_em).getTime() : null,
   };
+}
+
+// garantirDescricoes: busca no banco a descrição dos chamados da lista que
+// ainda não a têm (a lista principal vem sem ela, ver loadChamados).
+// Busca em lotes de 100 ids e grava em c.descricao de cada chamado.
+// Chamada por: openDetalhe, exportações (aqui e em relatorios.js).
+async function garantirDescricoes(list) {
+  const faltando = list.filter(c => c && c.descricao === undefined);
+  for (let i = 0; i < faltando.length; i += 100) {
+    const lote = faltando.slice(i, i + 100);
+    const { data, error } = await supa
+      .from('chamados')
+      .select('id,descricao')
+      .in('id', lote.map(c => c.id));
+    if (error) throw error;
+    const porId = new Map((data || []).map(r => [r.id, r.descricao]));
+    lote.forEach(c => { c.descricao = porId.get(c.id) ?? ''; });
+  }
 }
 
 // escapeHtml: recebe um texto e devolve o mesmo texto "seguro" para ser
@@ -527,21 +555,66 @@ function safeDocName(name) {
 // Canal de tempo real aberto com o Supabase. null = nenhum canal aberto ainda.
 let chamadosChannel = null;
 
+// true depois da primeira conexão do canal. Se o canal cair e voltar
+// (internet oscilou, PC dormiu), recarregamos a lista uma vez para pegar
+// o que mudou enquanto estava desconectado.
+let chamadosRealtimeConectado = false;
+
 // subscribeChamados: "assina" a tabela chamados no Supabase. A partir daí,
 // qualquer inclusão, alteração ou exclusão feita por qualquer pessoa
-// (event: '*') dispara loadChamados, que recarrega a lista e redesenha a tela,
-// e avisa alertaChamadoRealtime (notificacoes.js), que toca o som de chamado novo.
+// (event: '*') é aplicada direto na lista em memória (aplicarMudancaChamado),
+// SEM baixar todos os chamados de novo, e avisa alertaChamadoRealtime
+// (notificacoes.js), que toca o som de chamado novo.
 // Chamada por: app.js, logo depois do primeiro loadChamados.
 // Recebe: nada. Devolve: nada.
 function subscribeChamados() {
   // Evita assinaturas duplicadas quando o usuário sai e entra de novo
   if (chamadosChannel) supa.removeChannel(chamadosChannel);
+  chamadosRealtimeConectado = false;
   chamadosChannel = supa.channel('chamados-realtime')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'chamados' }, async payload => {
-      await loadChamados();
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'chamados' }, payload => {
+      aplicarMudancaChamado(payload);
       alertaChamadoRealtime(payload);
     })
-    .subscribe();
+    .subscribe(status => {
+      if (status !== 'SUBSCRIBED') return;
+      if (chamadosRealtimeConectado) {
+        loadChamados().catch(e => console.error('reconexão chamados:', e));
+      }
+      chamadosRealtimeConectado = true;
+    });
+}
+
+// aplicarMudancaChamado: atualiza allChamados com a linha que veio do tempo
+// real (inclusão, alteração ou exclusão) e agenda um redesenho da tela.
+// Usuário comum só mantém os próprios chamados (mesma regra do loadChamados).
+function aplicarMudancaChamado({ eventType, new: novo, old: antigo }) {
+  const id = eventType === 'DELETE' ? antigo?.id : novo?.id;
+  if (!id) return;
+  const idx = allChamados.findIndex(c => c.id === id);
+  const soDoUsuario = currentProfile && !hasAdminAccess();
+  if (eventType === 'DELETE' || (soDoUsuario && novo.user_id !== currentUser?.id)) {
+    if (idx >= 0) allChamados.splice(idx, 1);
+  } else {
+    const row = normalizeRow(novo);
+    // Mescla com o que já existe: o tempo real pode omitir colunas grandes
+    // que não mudaram (ex.: descricao), e assim não perdemos nada.
+    if (idx >= 0) allChamados[idx] = { ...allChamados[idx], ...row };
+    else allChamados.unshift(row);
+  }
+  agendarRenderAll();
+}
+
+// agendarRenderAll: junta várias mudanças seguidas num único redesenho
+// (no próximo quadro da tela), em vez de redesenhar a cada evento.
+let renderAllAgendado = false;
+function agendarRenderAll() {
+  if (renderAllAgendado) return;
+  renderAllAgendado = true;
+  requestAnimationFrame(() => {
+    renderAllAgendado = false;
+    renderAll();
+  });
 }
 
 // ─────────────────────────────────────────
@@ -579,16 +652,26 @@ function getFilteredChamados() {
     // Período: 86400000 é a quantidade de milissegundos em um dia.
     // Sai da lista o chamado aberto há mais dias do que o período escolhido.
     if (periodo && c.criadoEm   && (now - c.criadoEm) > periodo * 86400000) return false;
-    // Busca livre: junta protocolo, nome, contato, assunto, descrição, loja,
+    // Busca livre: junta protocolo, nome, contato, assunto, loja,
     // categoria, resolução e id num só texto e procura o termo digitado
-    // (sem diferenciar maiúsculas de minúsculas).
+    // (sem diferenciar maiúsculas de minúsculas). A descrição não entra:
+    // ela não vem na lista (ver loadChamados) e pode ser enorme.
     if (busca) {
-      const hay = [protocoloChamado(c), c.nome, c.contato, c.assunto, c.descricao, c.loja, c.categoria, c.resolucao, c.id]
+      const hay = [protocoloChamado(c), c.nome, c.contato, c.assunto, c.loja, c.categoria, c.resolucao, c.id]
         .join(' ').toLowerCase();
       if (!hay.includes(busca)) return false;
     }
     return true;
   });
+}
+
+// buscarChamadosComEspera: chamada a cada tecla no campo de busca. Espera
+// 250 ms sem digitar antes de filtrar e redesenhar a tabela, para não
+// refazer tudo a cada letra.
+let buscaChamadosTimer = null;
+function buscarChamadosComEspera() {
+  clearTimeout(buscaChamadosTimer);
+  buscaChamadosTimer = setTimeout(() => renderChamadosTable(getSortedFiltered()), 250);
 }
 
 // Grupos de status usados pelos cards do painel e pelo filtro
@@ -843,6 +926,20 @@ async function openDetalhe(id) {
   // Número desta abertura. Se outra abertura começar enquanto esta espera
   // os anexos, esta será descartada mais abaixo.
   const requestId = ++detailRequestId;
+
+  // A lista vem sem a descrição: busca só a deste chamado, agora.
+  if (c.descricao === undefined) {
+    setLoading(true);
+    try {
+      await garantirDescricoes([c]);
+    } catch (e) {
+      setLoading(false);
+      toast('Erro ao carregar o chamado: ' + e.message, 'err');
+      return;
+    }
+    setLoading(false);
+    if (requestId !== detailRequestId) return;
+  }
 
   // Permissões: só administradores editam status/observações e excluem.
   const isAdmin   = hasAdminAccess();
@@ -1478,9 +1575,18 @@ function chamadosSheet(list, name = 'Chamados') {
 async function exportCSV() {
   const list = getSortedFiltered();
   if (!list.length) { toast('Nenhum dado para exportar.', 'info'); return; }
-  const { header, rows } = chamadosTabela(list, false);
-  downloadCSV(`chamados_${fileDateStamp()}.csv`, header, rows);
-  toast(`${list.length} chamados exportados.`, 'ok');
+  try {
+    setLoading(true);
+    await garantirDescricoes(list); // a planilha tem a coluna Descrição
+    const { header, rows } = chamadosTabela(list, false);
+    downloadCSV(`chamados_${fileDateStamp()}.csv`, header, rows);
+    toast(`${list.length} chamados exportados.`, 'ok');
+  } catch (e) {
+    console.error('exportCSV:', e);
+    toast('Erro ao exportar: ' + e.message, 'err');
+  } finally {
+    setLoading(false);
+  }
 }
 
 // exportChamadosExcel: igual ao CSV, mas gera uma planilha Excel (.xlsx)
@@ -1490,6 +1596,7 @@ async function exportChamadosExcel() {
   const list = getSortedFiltered();
   if (!list.length) { toast('Nenhum dado para exportar.', 'info'); return; }
   try {
+    await garantirDescricoes(list); // a planilha tem a coluna Descrição
     await downloadXLSX(`chamados_${fileDateStamp()}.xlsx`, [chamadosSheet(list)]);
     toast(`${list.length} chamados exportados.`, 'ok');
   } catch (e) {

@@ -400,12 +400,22 @@ function relFiltroDescricao() {
 // Recebe: nada. Devolve: nada.
 // chamadosTabela (chamados.js) monta os títulos e as linhas; o "false"
 // indica que não é Excel (datas saem como texto).
-function exportRelCSV() {
+async function exportRelCSV() {
   const data = getRelData();
   if (!data.length) { toast('Sem dados no período.', 'info'); return; }
-  const { header, rows } = chamadosTabela(data, false);
-  downloadCSV(`relatorio_${fileDateStamp()}.csv`, header, rows);
-  toast(`${data.length} registros exportados.`, 'ok');
+  try {
+    setLoading(true);
+    // A lista principal vem sem a descrição (chamados.js): busca agora.
+    await garantirDescricoes(data);
+    const { header, rows } = chamadosTabela(data, false);
+    downloadCSV(`relatorio_${fileDateStamp()}.csv`, header, rows);
+    toast(`${data.length} registros exportados.`, 'ok');
+  } catch (e) {
+    console.error('exportRelCSV:', e);
+    toast('Erro ao exportar: ' + e.message, 'err');
+  } finally {
+    setLoading(false);
+  }
 }
 
 // Excel com várias abas: resumo, agrupamentos, recorrências e a lista de chamados
@@ -471,6 +481,7 @@ async function exportRelExcel() {
   // de chamados.js) traz a lista completa dos chamados filtrados.
   // downloadXLSX fica em ui.js.
   try {
+    await garantirDescricoes(data); // a aba de chamados tem a coluna Descrição
     await downloadXLSX(`relatorio_${fileDateStamp()}.xlsx`, [
       resumo,
       grupo('Por categoria', 'Categoria', s.topCat),
