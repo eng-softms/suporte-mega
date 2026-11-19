@@ -79,8 +79,10 @@
      revezam (só um aparece por vez; quem alterna é o js/auth.js):
        form-email-confirmed: aviso de e-mail confirmado;
        form-login: entrar com e-mail e senha;
-       form-forgot-password: pedir link para recuperar a senha;
-       form-reset-password: criar a nova senha (ao voltar do link);
+       form-forgot-password: pedir o código para recuperar a senha;
+       form-codigo: digitar o código de 6 dígitos recebido por e-mail
+                    (confirmação de cadastro ou recuperação de senha);
+       form-reset-password: criar a nova senha (depois do código);
        form-register: criar uma conta nova.
      Os botões chamam funções do auth.js pelo atributo onclick. -->
 <div class="login-screen" id="login-screen">
@@ -149,7 +151,7 @@
       </button>
     </div>
 
-    <!-- Esqueci minha senha: envia um link de recuperação para o e-mail.
+    <!-- Esqueci minha senha: envia um código de recuperação para o e-mail.
          login-err mostra erros; login-note mostra a confirmação de envio. -->
     <div id="form-forgot-password" style="display:none;flex-direction:column;gap:14px">
       <div class="form-group">
@@ -159,8 +161,26 @@
       <div class="login-err" id="f-err"></div>
       <div class="login-note" id="f-note" aria-live="polite"></div>
       <button type="button" class="btn btn-primary" id="f-btn" onclick="sendPasswordRecovery()" style="width:100%;justify-content:center;padding:10px">
-        Enviar link de recuperação
+        Enviar código
       </button>
+      <button type="button" class="login-link" onclick="showLoginTab('login')">Voltar para entrar</button>
+    </div>
+
+    <!-- Código de 6 dígitos: confirma o cadastro ou libera a troca de senha.
+         Usamos código (e não link) porque o filtro de segurança do e-mail
+         da empresa abre os links sozinho e eles chegam "já usados". -->
+    <div id="form-codigo" style="display:none;flex-direction:column;gap:14px">
+      <div class="login-note show" id="c-note" aria-live="polite"></div>
+      <div class="form-group">
+        <label class="form-label" for="c-codigo">Código recebido por e-mail</label>
+        <input class="form-control codigo-input" type="text" id="c-codigo" inputmode="numeric"
+               autocomplete="one-time-code" maxlength="10" placeholder="000000">
+      </div>
+      <div class="login-err" id="c-err"></div>
+      <button type="button" class="btn btn-primary" id="c-btn" onclick="verificarCodigo()" style="width:100%;justify-content:center;padding:10px">
+        Confirmar código
+      </button>
+      <button type="button" class="login-link" id="c-reenviar" onclick="reenviarCodigo()">Não recebeu? Reenviar código</button>
       <button type="button" class="login-link" onclick="showLoginTab('login')">Voltar para entrar</button>
     </div>
 

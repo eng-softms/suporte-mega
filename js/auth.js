@@ -43,6 +43,10 @@ let currentProfile = null;   // Perfil: id, nome de exibição, função e e-mai
 // link "esqueci a senha"). Enquanto isso, o sistema NÃO é aberto: só a tela
 // de nova senha.
 let isPasswordRecovery = false;
+// Formulário do código de 6 dígitos: para que serve o código ('signup' =
+// confirmar cadastro; 'recovery' = trocar a senha) e para qual e-mail.
+let codigoModo  = null;
+let codigoEmail = '';
 let pendingLoginErr = null;  // Mensagem a exibir na tela de acesso após encerrar a sessão
 let usuariosById = {};       // Perfis listados em "Gerenciar Usuários", por id
 
@@ -87,7 +91,7 @@ function showEmailConfirmed() {
   document.getElementById('login-screen').style.display = '';
   document.getElementById('app-root').style.display = 'none';
   document.querySelector('.login-tabs').style.display = 'none';
-  ['form-login', 'form-register', 'form-forgot-password', 'form-reset-password']
+  ['form-login', 'form-register', 'form-forgot-password', 'form-reset-password', 'form-codigo']
     .forEach(id => { document.getElementById(id).style.display = 'none'; });
 
   // Em caso de erro: ícone vermelho com "X", título e texto explicando o que fazer.
@@ -165,6 +169,7 @@ function showLoginTab(tab) {
   document.getElementById('form-register').style.display = tab === 'register' ? 'flex' : 'none';
   document.getElementById('form-forgot-password').style.display = 'none';
   document.getElementById('form-reset-password').style.display = 'none';
+  document.getElementById('form-codigo').style.display = 'none';
   document.querySelector('.login-tabs').style.display = '';
   document.getElementById('tab-login').classList.toggle('active',    tab === 'login');
   document.getElementById('tab-register').classList.toggle('active', tab === 'register');
@@ -172,6 +177,7 @@ function showLoginTab(tab) {
   setLoginErr('r', '');
   setLoginErr('f', '');
   setLoginErr('p', '');
+  setLoginErr('c', '');
   document.getElementById('f-note').classList.remove('show');
 }
 
@@ -185,6 +191,7 @@ function showForgotPassword() {
   document.getElementById('form-login').style.display = 'none';
   document.getElementById('form-register').style.display = 'none';
   document.getElementById('form-reset-password').style.display = 'none';
+  document.getElementById('form-codigo').style.display = 'none';
   document.getElementById('form-forgot-password').style.display = 'flex';
   setLoginErr('f', '');
   document.getElementById('f-note').classList.remove('show');
@@ -206,11 +213,96 @@ function showPasswordRecoveryForm() {
   document.getElementById('form-login').style.display = 'none';
   document.getElementById('form-register').style.display = 'none';
   document.getElementById('form-forgot-password').style.display = 'none';
+  document.getElementById('form-codigo').style.display = 'none';
   document.getElementById('form-reset-password').style.display = 'flex';
   if (enteringRecovery) {
     document.getElementById('p-senha').value = '';
     document.getElementById('p-senha-confirm').value = '';
     setLoginErr('p', '');
+  }
+}
+
+// showCodigoForm: mostra o formulário "Código recebido por e-mail".
+// - Recebe: modo = 'signup' (confirmar cadastro) ou 'recovery' (trocar a
+//   senha), email = para onde o código foi enviado e, opcionalmente, o
+//   texto explicativo.
+// - Chamada por: doRegister(), doLogin() (e-mail não confirmado) e
+//   sendPasswordRecovery().
+function showCodigoForm(modo, email, texto) {
+  codigoModo  = modo;
+  codigoEmail = email;
+  document.querySelector('.login-tabs').style.display = 'none';
+  ['form-login', 'form-register', 'form-forgot-password', 'form-reset-password']
+    .forEach(id => { document.getElementById(id).style.display = 'none'; });
+  document.getElementById('c-note').textContent = texto || (modo === 'signup'
+    ? `Enviamos um código para ${email}. Digite-o abaixo para confirmar seu cadastro.`
+    : `Se ${email} estiver cadastrado, enviamos um código para ele. Digite-o abaixo para criar uma nova senha.`);
+  const input = document.getElementById('c-codigo');
+  input.value = '';
+  setLoginErr('c', '');
+  document.getElementById('form-codigo').style.display = 'flex';
+  input.focus();
+}
+
+// verificarCodigo: confere o código digitado com o Supabase.
+// - Chamada por: botão "Confirmar código" ou Enter no campo do código.
+// - Cadastro: deu certo → a sessão abre e o sistema aparece sozinho
+//   (onAuthStateChange → handleAuthChange → showApp).
+// - Senha: deu certo → mostra o formulário "Criar nova senha".
+async function verificarCodigo() {
+  const token = document.getElementById('c-codigo').value.replace(/\D/g, '');
+  const btn = document.getElementById('c-btn');
+  setLoginErr('c', '');
+  if (token.length < 6) {
+    setLoginErr('c', 'Digite o código de 6 dígitos que chegou no seu e-mail.');
+    document.getElementById('c-codigo').focus();
+    return;
+  }
+
+  const recuperacao = codigoModo === 'recovery';
+  // Liga o modo de recuperação ANTES de verificar: assim, quando a sessão
+  // abrir, handleAuthChange mostra a tela de nova senha e não o sistema.
+  if (recuperacao) isPasswordRecovery = true;
+
+  btn.disabled = true; btn.textContent = 'Confirmando…';
+  let error;
+  try {
+    ({ error } = await supa.auth.verifyOtp({
+      email: codigoEmail, token, type: recuperacao ? 'recovery' : 'signup',
+    }));
+  } catch (e) {
+    error = { message: 'Falha de conexão com o servidor. Tente novamente.' };
+  }
+  btn.disabled = false; btn.textContent = 'Confirmar código';
+
+  if (error) {
+    if (recuperacao) isPasswordRecovery = false;
+    setLoginErr('c', authErrorMsg(error));
+    return;
+  }
+  if (recuperacao) {
+    showPasswordRecoveryForm();
+  } else {
+    toast('E-mail confirmado! Bem-vindo(a).', 'ok');
+  }
+}
+
+// reenviarCodigo: pede ao Supabase um código novo para o mesmo e-mail.
+// - Chamada por: link "Não recebeu? Reenviar código".
+async function reenviarCodigo() {
+  const btn = document.getElementById('c-reenviar');
+  setLoginErr('c', '');
+  btn.disabled = true;
+  try {
+    const { error } = codigoModo === 'recovery'
+      ? await supa.auth.resetPasswordForEmail(codigoEmail)
+      : await supa.auth.resend({ type: 'signup', email: codigoEmail });
+    if (error) throw error;
+    toast('Código reenviado. Use sempre o código do e-mail mais recente.', 'info');
+  } catch (e) {
+    setLoginErr('c', 'Não foi possível reenviar: ' + authErrorMsg(e));
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -229,6 +321,9 @@ function authErrorMsg(error) {
         '(ou peça ajuda ao suporte de TI).';
   }
   if (m.includes('invalid login credentials')) return 'E-mail ou senha incorretos.';
+  if (m.includes('token has expired') || m.includes('otp') || m.includes('invalid token')) {
+    return 'Código inválido ou vencido. Confira os números ou clique em "Reenviar código".';
+  }
   if (m.includes('email not confirmed')) {
     return 'Confirme seu e-mail antes de entrar (use o link MAIS RECENTE que recebeu).';
   }
@@ -271,20 +366,20 @@ async function sendPasswordRecovery() {
   btn.disabled = true;
   btn.textContent = 'Enviando…';
   try {
-    // redirectTo: o link do e-mail traz a pessoa de volta a esta mesma página
+    // O e-mail traz um código de 6 dígitos (modelo "Reset Password" no Supabase).
+    // redirectTo continua aqui só para links antigos que ainda estejam no e-mail.
     const redirectTo = `${window.location.origin}${window.location.pathname}`;
     const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo });
     if (error) throw error;
-    // A mensagem é propositalmente vaga ("se esse e-mail estiver cadastrado")
-    // para não revelar a estranhos quais e-mails existem no sistema.
-    note.textContent = 'Se esse e-mail estiver cadastrado, você receberá um link para redefinir a senha.';
-    note.classList.add('show');
+    // O texto do próximo formulário é propositalmente vago ("se esse e-mail
+    // estiver cadastrado") para não revelar a estranhos quais e-mails existem.
+    showCodigoForm('recovery', email);
   } catch (e) {
     setLoginErr('f', 'Não foi possível enviar o e-mail: ' + authErrorMsg(e));
   } finally {
     // Com ou sem erro, reativa o botão
     btn.disabled = false;
-    btn.textContent = 'Enviar link de recuperação';
+    btn.textContent = 'Enviar código';
   }
 }
 
@@ -369,6 +464,13 @@ async function doLogin() {
   btn.disabled = false; btn.textContent = 'Entrar';
   // Traduz para português as mensagens mais comuns do Supabase (que vêm em inglês)
   if (error) {
+    // Cadastro feito mas não confirmado: leva direto para digitar o código
+    if ((error.message || '').includes('Email not confirmed')) {
+      showCodigoForm('signup', email,
+        'Seu e-mail ainda não foi confirmado. Digite o código que recebeu no cadastro ' +
+        'ou clique em "Reenviar código".');
+      return;
+    }
     setLoginErr('l', authErrorMsg(error));
   }
   // Se der certo, onAuthStateChange chama showApp() automaticamente.
@@ -431,9 +533,7 @@ async function doRegister() {
   // Atenção: se a pessoa já tinha se cadastrado e não confirmou, o Supabase
   // reenvia o link mas MANTÉM a senha do primeiro cadastro.
   if (!data?.session) {
-    toast('Conta criada! Verifique seu e-mail e clique no link mais recente. ' +
-      'Se já tinha se cadastrado antes, a senha continua sendo a do primeiro cadastro.', 'info');
-    showLoginTab('login');
+    showCodigoForm('signup', email);
   }
   // Se a confirmação não for necessária, onAuthStateChange já inicia a sessão.
 }
@@ -973,6 +1073,8 @@ document.addEventListener('keydown', e => {
     && document.getElementById('login-screen')?.style.display !== 'none';
   const resetVisible = document.getElementById('form-reset-password')?.style.display !== 'none'
     && document.getElementById('login-screen')?.style.display !== 'none';
+  const codigoVisible = document.getElementById('form-codigo')?.style.display !== 'none'
+    && document.getElementById('login-screen')?.style.display !== 'none';
 
   // Enter avança para o próximo campo; no último campo, envia o formulário
   // Recebe: ids = campos do formulário em ordem; enviar = função a chamar no fim.
@@ -996,4 +1098,6 @@ document.addEventListener('keydown', e => {
   }
 
   if (resetVisible) enterAvancaOuEnvia(['p-senha', 'p-senha-confirm'], updateRecoveredPassword);
+
+  if (codigoVisible) enterAvancaOuEnvia(['c-codigo'], verificarCodigo);
 });

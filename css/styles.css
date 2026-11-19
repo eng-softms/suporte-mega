@@ -1403,3 +1403,9 @@ select { cursor: pointer; }
 }
 @keyframes alertaPulso { 0%,100% { opacity: .35; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.15); } }
 @media (max-width: 600px) { .alertas-chamado { right: 16px; bottom: 16px; } }
+
+/* Campo do código de 6 dígitos (tela de acesso) */
+.codigo-input {
+  text-align: center; font-family: var(--mono);
+  font-size: 22px; letter-spacing: .4em; font-weight: 600;
+}
