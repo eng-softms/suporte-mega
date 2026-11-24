@@ -36,7 +36,7 @@ const LOJAS = [
   'Loja 01','Loja 02','Loja 03','Loja 04','Loja 05',
   'Loja 06','Loja 07','Loja 08','Loja 09','Loja 10',
   'Loja 11','Loja 12','Loja 13','Loja 14','Loja 15',
-  'Loja 16','Loja 17','Loja 18',
+  'Loja 16','Loja 17','Loja 18','Loja 19','Loja 20',
   'Centro de Distribuição','Compras','Financeiro',
   'Recursos Humanos','Diretoria'
 ];
